@@ -1,77 +1,25 @@
 use cvt::cvt;
 use libc::{
-    close, socket, AF_INET, AF_INET6, AF_PACKET, AF_UNIX, IPPROTO_SCTP, IPPROTO_TCP, IPPROTO_UDP,
-    IPPROTO_UDPLITE, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET, SOCK_STREAM,
+    close, socket, AF_INET, AF_INET6, AF_PACKET, AF_UNIX, ETH_P_ALL, IPPROTO_SCTP, IPPROTO_TCP,
+    IPPROTO_UDP, IPPROTO_UDPLITE, IPPROTO_RAW, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET, SOCK_STREAM,
 };
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 use std::io::ErrorKind::Interrupted;
 use std::io::Result;
 
-#[derive(PartialEq, Eq, Clone)]
-pub enum Domain {
-    Unix = AF_UNIX as isize,
-    Inet = AF_INET as isize,
-    Inet6 = AF_INET6 as isize,
-    Packet = AF_PACKET as isize,
-}
+pub const PROTO_NULL: i32   = 0_i32;
+pub const IPPROTO_L2TP: i32 = 115_i32;
 
-#[derive(PartialEq, Eq, Clone)]
-pub enum Type {
-    Stream = SOCK_STREAM as isize,
-    Datagram = SOCK_DGRAM as isize,
-    Raw = SOCK_RAW as isize,
-    Sequence = SOCK_SEQPACKET as isize,
-}
-
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub enum StreamProtocol {
-    TCP = IPPROTO_TCP as isize,
-    SCTP = IPPROTO_SCTP as isize,
-}
-
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub enum DatagramProtocol {
-    UDP = IPPROTO_UDP as isize,
-    L2TP = 115,
-    UDPLite = IPPROTO_UDPLITE as isize,
-}
-
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub enum Protocol {
-    Null,
-    Layer2Protocol(u16),
-    Layer3Protocol(u8),
-    StreamProtocol(StreamProtocol),
-    DatagramProtocol(DatagramProtocol),
-}
-
-impl Protocol {
-    pub fn into_inner(&self) -> isize {
-        match *self {
-            Protocol::Layer2Protocol(i) => i as isize,
-            Protocol::Layer3Protocol(j) => j as isize,
-            Protocol::StreamProtocol(l) => l.clone() as isize,
-            Protocol::DatagramProtocol(k) => k.clone() as isize,
-            Protocol::Null => 0,
-        }
-    }
-}
-
-const DOMAIN_PACKET: Domain = Domain::Packet;
-const TYPE_RAW: Type = Type::Raw;
-const ETH_P_ALL: u16 = 0x0003;
-const PROTOCOL_ETH_ALL: Protocol = Protocol::Layer2Protocol(ETH_P_ALL.to_be());
-
-pub struct PacketLayer2Socket {
-    fd: i32,
-}
-
-trait Socket {
+pub trait SocketDesc {
+    fn new(fd: i32) -> Self;
     fn os(&self) -> i32;
+    fn domain() -> i32;
+    fn type_() -> i32;
+    fn protocol() -> i32;
 }
 
-impl PacketLayer2Socket {
+impl<S: SocketDesc> Socket<S> {
     #[cfg(target_os = "linux")]
     pub fn new() -> Result<Self> {
         Self::with_flags(SOCK_CLOEXEC)
@@ -103,23 +51,27 @@ impl PacketLayer2Socket {
     }
 
     fn with_flags(flags: i32) -> Result<Self> {
-        match unsafe {
-            cvt(socket(
-                DOMAIN_PACKET as i32,
-                TYPE_RAW as i32 | flags,
-                PROTOCOL_ETH_ALL.into_inner() as i32,
-            ))
-        } {
-            Ok(fd) => Ok(Self { fd }),
+        match unsafe { cvt(socket(S::domain(), S::type_() | flags, S::protocol())) } {
+            Ok(fd) => Ok(Self {
+                inner: S::new(fd as i32),
+            }),
             Err(e) => Err(e),
         }
     }
+
+    pub fn os(&self) -> i32 {
+        self.inner.os()
+    }
 }
 
-impl Drop for PacketLayer2Socket {
+pub struct Socket<S: SocketDesc> {
+    inner: S,
+}
+
+impl<S: SocketDesc> Drop for Socket<S> {
     fn drop(&mut self) {
         loop {
-            match unsafe { cvt(close(self.os())) } {
+            match unsafe { cvt(close(self.inner.os())) } {
                 Ok(_) => return,
                 Err(e) => {
                     if e.kind() == Interrupted {
@@ -133,8 +85,111 @@ impl Drop for PacketLayer2Socket {
     }
 }
 
-impl Socket for PacketLayer2Socket {
-    #[inline]
+pub struct PacketLayer2Socket {
+    fd: i32,
+}
+
+impl SocketDesc for PacketLayer2Socket {
+    fn new(fd: i32) -> Self {
+        Self { fd }
+    }
+    fn domain() -> i32 {
+        AF_PACKET as i32
+    }
+    fn type_() -> i32 {
+        SOCK_RAW as i32
+    }
+    fn protocol() -> i32 {
+        (ETH_P_ALL as u16).to_be() as i32
+    }
+    fn os(&self) -> i32 {
+        self.fd
+    }
+}
+
+pub struct PacketLayer3Socket {
+    fd: i32,
+}
+
+impl SocketDesc for PacketLayer3Socket {
+    fn new(fd: i32) -> Self {
+        Self { fd }
+    }
+    fn domain() -> i32 {
+        AF_PACKET as i32
+    }
+    fn type_() -> i32 {
+        SOCK_DGRAM as i32
+    }
+    fn protocol() -> i32 {
+        (ETH_P_ALL as u16).to_be() as i32
+    }
+    fn os(&self) -> i32 {
+        self.fd
+    }
+}
+
+pub struct RawSocket {
+    fd: i32,
+}
+
+impl SocketDesc for RawSocket {
+    fn new(fd: i32) -> Self {
+        Self { fd }
+    }
+    fn domain() -> i32 {
+        AF_INET as i32
+    }
+    fn type_() -> i32 {
+        SOCK_RAW as i32
+    }
+    fn protocol() -> i32 {
+        IPPROTO_RAW
+    }
+    fn os(&self) -> i32 {
+        self.fd
+    }
+}
+
+pub struct UdpSocket {
+    fd: i32,
+}
+
+impl SocketDesc for UdpSocket {
+    fn new(fd: i32) -> Self {
+        Self { fd }
+    }
+    fn domain() -> i32 {
+        AF_INET as i32
+    }
+    fn type_() -> i32 {
+        SOCK_DGRAM as i32
+    }
+    fn protocol() -> i32 {
+        PROTO_NULL
+    }
+    fn os(&self) -> i32 {
+        self.fd
+    }
+}
+
+pub struct TcpSocket {
+    fd: i32,
+}
+
+impl SocketDesc for TcpSocket {
+    fn new(fd: i32) -> Self {
+        Self { fd }
+    }
+    fn domain() -> i32 {
+        AF_INET as i32
+    }
+    fn type_() -> i32 {
+        SOCK_STREAM as i32
+    }
+    fn protocol() -> i32 {
+        PROTO_NULL
+    }
     fn os(&self) -> i32 {
         self.fd
     }
@@ -145,33 +200,132 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-
-    #[test]
     fn packet_layer2_socket_new() {
-        let s = PacketLayer2Socket::new().unwrap();
+        let s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         assert!(s.os() >= 0);
     }
 
     #[test]
     fn packet_layer2_socket_plain() {
-        let s = PacketLayer2Socket::plain().unwrap();
+        let s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
         assert!(s.os() >= 0);
     }
 
     #[cfg(target_os = "linux")]
     #[test]
     fn packet_layer2_socket_nonblocking() {
-        let s = PacketLayer2Socket::nonblocking().unwrap();
+        let s: Socket<PacketLayer2Socket> = Socket::nonblocking().unwrap();
         assert!(s.os() >= 0);
     }
 
     #[cfg(target_os = "linux")]
     #[test]
     fn packet_layer2_socket_plain_nonblocking() {
-        let s = PacketLayer2Socket::plain_nonblocking().unwrap();
+        let s: Socket<PacketLayer2Socket> = Socket::plain_nonblocking().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[test]
+    fn packet_layer3_socket_new() {
+        let s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[test]
+    fn packet_layer3_socket_plain() {
+        let s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn packet_layer3_socket_nonblocking() {
+        let s: Socket<PacketLayer2Socket> = Socket::nonblocking().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn packet_layer3_socket_plain_nonblocking() {
+        let s: Socket<PacketLayer2Socket> = Socket::plain_nonblocking().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[test]
+    fn raw_socket_new() {
+        let s: Socket<RawSocket> = Socket::new().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[test]
+    fn raw_socket_plain() {
+        let s: Socket<RawSocket> = Socket::plain().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn raw_socket_nonblocking() {
+        let s: Socket<RawSocket> = Socket::nonblocking().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn raw_socket_plain_nonblocking() {
+        let s: Socket<RawSocket> = Socket::plain_nonblocking().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[test]
+    fn udp_socket_new() {
+        let s: Socket<UdpSocket> = Socket::new().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[test]
+    fn udp_socket_plain() {
+        let s: Socket<UdpSocket> = Socket::plain().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn udp_socket_nonblocking() {
+        let s: Socket<UdpSocket> = Socket::nonblocking().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn udp_socket_plain_nonblocking() {
+        let s: Socket<UdpSocket> = Socket::plain_nonblocking().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[test]
+    fn tcp_socket_new() {
+        let s: Socket<TcpSocket> = Socket::new().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[test]
+    fn tcp_socket_plain() {
+        let s: Socket<TcpSocket> = Socket::plain().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn tcp_socket_nonblocking() {
+        let s: Socket<TcpSocket> = Socket::nonblocking().unwrap();
+        assert!(s.os() >= 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn tcp_socket_plain_nonblocking() {
+        let s: Socket<TcpSocket> = Socket::plain_nonblocking().unwrap();
         assert!(s.os() >= 0);
     }
 }
