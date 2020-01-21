@@ -1,8 +1,8 @@
 use cvt::cvt;
 use libc::{
-    close, fcntl, socket, AF_INET, AF_INET6, AF_PACKET, AF_UNIX, ETH_P_ALL, FD_CLOEXEC, F_GETFL, F_GETFD,
-    F_SETFL, F_SETFD, IPPROTO_RAW, IPPROTO_SCTP, IPPROTO_TCP, IPPROTO_UDP, IPPROTO_UDPLITE, O_NONBLOCK,
-    SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET, SOCK_STREAM,
+    close, fcntl, socket, AF_INET, AF_INET6, AF_PACKET, AF_UNIX, ETH_P_ALL, FD_CLOEXEC, F_GETFD,
+    F_GETFL, F_SETFD, F_SETFL, IPPROTO_RAW, IPPROTO_SCTP, IPPROTO_TCP, IPPROTO_UDP,
+    IPPROTO_UDPLITE, O_NONBLOCK, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET, SOCK_STREAM,
 };
 
 #[cfg(target_os = "linux")]
@@ -53,7 +53,6 @@ impl<S: SocketDesc> Socket<S> {
         s.set_nonblocking()?;
         s
     }
-
 
     #[cfg(target_os = "linux")]
     pub fn plain_nonblocking() -> Result<Self> {
@@ -235,9 +234,123 @@ impl SocketDesc for TcpSocket {
     }
 }
 
+mod cbpf {
+    pub use boolean_expression::*;
+    pub use std::mem::{forget, size_of_val};
+
+    #[repr(C)]
+    #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
+    pub struct Op {
+        code: u16,
+        jt: u8,
+        jf: u8,
+        k: u32,
+    }
+
+    impl Op {
+        pub fn new(code: u16, jt: u8, jf: u8, k: u32) -> Op {
+            Op {
+                code: code,
+                jt: jt,
+                jf: jf,
+                k: k,
+            }
+        }
+    }
+
+    #[repr(C)]
+    #[derive(Debug)]
+    pub struct Prog {
+        len: u16,
+        filter: *mut Op,
+    }
+
+    impl Prog {
+        pub fn new(ops: Vec<Op>) -> Prog {
+            let mut ops = ops.into_boxed_slice();
+            let len = ops.len();
+            let ptr = ops.as_mut_ptr();
+
+            forget(ops);
+
+            Prog {
+                len: len as _,
+                filter: ptr,
+            }
+        }
+    }
+
+    impl Drop for Prog {
+        fn drop(&mut self) {
+            unsafe {
+                let len = self.len as usize;
+                let ptr = self.filter;
+                Vec::from_raw_parts(ptr, len, len);
+            }
+        }
+    }
+
+    #[derive(Default)]
+    pub struct CompilerState {}
+
+    #[derive(Default)]
+    pub struct Compiler {
+        state: CompilerState,
+    }
+
+    #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
+    pub struct Condition {
+        // last Op must be a jump, we should force it
+        ops: Vec<Op>,
+    }
+
+    impl Condition {
+        pub fn new(ops: Vec<Op>) -> Self {
+            Self { ops }
+        }
+    }
+
+    impl IntoIterator for Condition {
+        type Item = Op;
+        type IntoIter = std::vec::IntoIter<Self::Item>;
+        fn into_iter(self) -> Self::IntoIter {
+            self.ops.into_iter()
+        }
+    }
+
+    impl Compiler {
+        fn step(&self, expr: Expr<Condition>, instructions: &mut Vec<Op>) {
+            match expr {
+                Expr::Terminal(c) => instructions.extend(c),
+                _ => panic!(),
+            }
+        }
+
+        pub fn compile(self, expr: Expr<Condition>) -> Prog {
+            let mut instructions: Vec<Op> = Vec::new();
+            self.step(expr, &mut instructions);
+            println!("{:?}", instructions);
+            Prog::new(instructions)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::cbpf::*;
     use super::*;
+    #[test]
+    fn doit() {
+        let mut ops = vec![
+                Op::new(0x28, 0, 0, 0x000c),
+                Op::new(0x15, 0, 1, 0x0806),
+                Op::new(0x06, 0, 0, 0xffff),
+                Op::new(0x06, 0, 0, 0x0000),
+            ];
+        let mut c = Condition::new(ops);
+        let compiler = Compiler::default();
+        println!("{:?}", compiler.compile(Expr::Terminal(c)));
+    }
 
     #[test]
     fn packet_layer2_socket_flags() {
