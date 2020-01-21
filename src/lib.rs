@@ -1,14 +1,16 @@
 use cvt::cvt;
 use libc::{
-    close, socket, AF_INET, AF_INET6, AF_PACKET, AF_UNIX, ETH_P_ALL, IPPROTO_SCTP, IPPROTO_TCP,
-    IPPROTO_UDP, IPPROTO_UDPLITE, IPPROTO_RAW, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET, SOCK_STREAM,
+    close, fcntl, socket, AF_INET, AF_INET6, AF_PACKET, AF_UNIX, ETH_P_ALL, FD_CLOEXEC, F_GETFL, F_GETFD,
+    F_SETFL, F_SETFD, IPPROTO_RAW, IPPROTO_SCTP, IPPROTO_TCP, IPPROTO_UDP, IPPROTO_UDPLITE, O_NONBLOCK,
+    SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET, SOCK_STREAM,
 };
+
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 use std::io::ErrorKind::Interrupted;
 use std::io::Result;
 
-pub const PROTO_NULL: i32   = 0_i32;
+pub const PROTO_NULL: i32 = 0_i32;
 pub const IPPROTO_L2TP: i32 = 115_i32;
 
 pub trait SocketDesc {
@@ -45,6 +47,14 @@ impl<S: SocketDesc> Socket<S> {
         Self::with_flags(SOCK_CLOEXEC | SOCK_NONBLOCK)
     }
 
+    #[cfg(not(target_os = "linux"))]
+    pub fn nonblocking() -> Result<Self> {
+        let mut s = Self::new()?;
+        s.set_nonblocking()?;
+        s
+    }
+
+
     #[cfg(target_os = "linux")]
     pub fn plain_nonblocking() -> Result<Self> {
         Self::with_flags(SOCK_NONBLOCK)
@@ -61,6 +71,36 @@ impl<S: SocketDesc> Socket<S> {
 
     pub fn os(&self) -> i32 {
         self.inner.os()
+    }
+
+    pub fn flags(&self) -> Result<i32> {
+        unsafe { cvt(fcntl(self.os(), F_GETFL)) }
+    }
+
+    pub fn fd_flags(&self) -> Result<i32> {
+        unsafe { cvt(fcntl(self.os(), F_GETFD)) }
+    }
+
+    pub fn set_nonblocking(&mut self) -> Result<()> {
+        self.set_flags(self.flags()? | O_NONBLOCK)
+    }
+
+    pub fn set_cloexe(&mut self) -> Result<()> {
+        self.set_fd_flags(FD_CLOEXEC)
+    }
+
+    fn set_flags(&mut self, flags: i32) -> Result<()> {
+        match unsafe { cvt(fcntl(self.os(), F_SETFL, flags)) } {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn set_fd_flags(&mut self, flags: i32) -> Result<()> {
+        match unsafe { cvt(fcntl(self.os(), F_SETFD, flags)) } {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -198,6 +238,13 @@ impl SocketDesc for TcpSocket {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn packet_layer2_socket_flags() {
+        let mut s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
+        s.set_nonblocking().unwrap();
+        assert!(s.flags().unwrap() & SOCK_NONBLOCK == SOCK_NONBLOCK);
+    }
 
     #[test]
     fn packet_layer2_socket_new() {
