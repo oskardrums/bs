@@ -238,6 +238,42 @@ mod cbpf {
     pub use boolean_expression::*;
     pub use std::mem::{forget, size_of_val};
 
+    const BPF_LD: u16 = 0x00;
+    const BPF_LDX: u16 = 0x01;
+    const BPF_ST: u16 = 0x02;
+    const BPF_STX: u16 = 0x03;
+    const BPF_ALU: u16 = 0x04;
+    const BPF_JMP: u16 = 0x05;
+    const BPF_RET: u16 = 0x06;
+    const BPF_MISC: u16 = 0x07;
+    const BPF_W: u16 = 0x00;
+    const BPF_H: u16 = 0x08;
+    const BPF_B: u16 = 0x10;
+    const BPF_IMM: u16 = 0x00;
+    const BPF_ABS: u16 = 0x20;
+    const BPF_IND: u16 = 0x40;
+    const BPF_MEM: u16 = 0x60;
+    const BPF_LEN: u16 = 0x80;
+    const BPF_MSH: u16 = 0xa0;
+    const BPF_ADD: u16 = 0x00;
+    const BPF_SUB: u16 = 0x10;
+    const BPF_MUL: u16 = 0x20;
+    const BPF_DIV: u16 = 0x30;
+    const BPF_OR: u16 = 0x40;
+    const BPF_AND: u16 = 0x50;
+    const BPF_LSH: u16 = 0x60;
+    const BPF_RSH: u16 = 0x70;
+    const BPF_NEG: u16 = 0x80;
+    const BPF_MOD: u16 = 0x90;
+    const BPF_XOR: u16 = 0xa0;
+    const BPF_JA: u16 = 0x00;
+    const BPF_JEQ: u16 = 0x10;
+    const BPF_JGT: u16 = 0x20;
+    const BPF_JGE: u16 = 0x30;
+    const BPF_JSET: u16 = 0x40;
+    const BPF_K: u16 = 0x00;
+    const BPF_X: u16 = 0x08;
+
     #[repr(C)]
     #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
     pub struct Op {
@@ -302,11 +338,33 @@ mod cbpf {
     pub struct Condition {
         // last Op must be a jump, we should force it
         ops: Vec<Op>,
+        return_instruction: u16,
+        return_argument: u32,
     }
 
     impl Condition {
-        pub fn new(ops: Vec<Op>) -> Self {
-            Self { ops }
+        pub fn new(ops: Vec<Op>, return_instruction: u16, return_argument: u32) -> Self {
+            Self {
+                ops,
+                return_instruction,
+                return_argument,
+            }
+        }
+
+        pub fn ops(self) -> Vec<Op> {
+            self.ops
+        }
+
+        pub fn return_argument(&self) -> u32 {
+            self.return_argument
+        }
+
+        pub fn return_instruction(&self) -> u16 {
+            self.return_instruction
+        }
+
+        pub fn len(&self) -> u8 {
+            (self.ops.len() as u8) + 1 // for good luck. nah, for the return op.
         }
     }
 
@@ -319,19 +377,58 @@ mod cbpf {
     }
 
     impl Compiler {
-        fn step(&self, expr: Expr<Condition>, instructions: &mut Vec<Op>) {
+        fn walk(&self, expr: Expr<Condition>, out: &mut Vec<Op>, jt: u8, jf: u8) -> u8 {
+            let mut res = 0;
             match expr {
-                Expr::Terminal(c) => instructions.extend(c),
-                _ => panic!(),
-            }
+                Expr::Terminal(condition) => {
+                    out.push(Op::new(
+                        condition.return_instruction(),
+                        jt,
+                        jf,
+                        condition.return_argument(),
+                    ));
+                    res = condition.len();
+                    out.extend(condition.ops());
+                }
+                Expr::Not(e) => {
+                    res = self.walk(*e, out, jf, jt);
+                }
+                Expr::And(a, b) => {
+                    res = self.walk(*b, out, jt, jf);
+                    res += self.walk(*a, out, 0, jf + res);
+                }
+                Expr::Or(a, b) => {
+                    res = self.walk(*b, out, jt, jf);
+                    res += self.walk(*a, out, jt + res, 0);
+                }
+                Expr::Const(boolean) => {
+                    if boolean {
+                    } else {
+                    }
+                }
+            };
+            res
         }
 
-        pub fn compile(self, expr: Expr<Condition>) -> Prog {
+        pub fn compile(&self, expr: Expr<Condition>) -> Prog {
             let mut instructions: Vec<Op> = Vec::new();
-            self.step(expr, &mut instructions);
+
+            instructions.push(Op::new(BPF_RET, 0, 0, 0));
+            instructions.push(Op::new(BPF_RET, 0, 0, 4096));
+            self.walk(expr, &mut instructions, 0, 1);
+
+            instructions.reverse();
             println!("{:?}", instructions);
             Prog::new(instructions)
         }
+    }
+
+    pub fn ether_type(ether_type: u16) -> Condition {
+        Condition::new(
+            vec![Op::new(BPF_ABS | BPF_LD | BPF_H, 0, 0, 0x000c)],
+            BPF_JMP | BPF_JEQ,
+            ether_type.to_be() as u32,
+        )
     }
 }
 
@@ -341,15 +438,9 @@ mod tests {
     use super::*;
     #[test]
     fn doit() {
-        let mut ops = vec![
-                Op::new(0x28, 0, 0, 0x000c),
-                Op::new(0x15, 0, 1, 0x0806),
-                Op::new(0x06, 0, 0, 0xffff),
-                Op::new(0x06, 0, 0, 0x0000),
-            ];
-        let mut c = Condition::new(ops);
         let compiler = Compiler::default();
-        println!("{:?}", compiler.compile(Expr::Terminal(c)));
+        compiler.compile(Expr::And(Box::new(Expr::Terminal(ether_type(0x0800))), Box::new(Expr::Terminal(ether_type(0x0806)))));
+        compiler.compile(Expr::Or(Box::new(Expr::Terminal(ether_type(0x0800))), Box::new(Expr::Terminal(ether_type(0x0806)))));
     }
 
     #[test]
