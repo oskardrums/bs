@@ -1,14 +1,16 @@
 use cvt::cvt;
 use libc::{
-    close, fcntl, socket, AF_INET, AF_INET6, AF_PACKET, AF_UNIX, ETH_P_ALL, FD_CLOEXEC, F_GETFD,
-    F_GETFL, F_SETFD, F_SETFL, IPPROTO_RAW, IPPROTO_SCTP, IPPROTO_TCP, IPPROTO_UDP,
-    IPPROTO_UDPLITE, O_NONBLOCK, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET, SOCK_STREAM,
+    c_void, close, fcntl, setsockopt, socket, socklen_t, AF_INET, AF_INET6, AF_PACKET, AF_UNIX,
+    ETH_P_ALL, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, IPPROTO_RAW, IPPROTO_SCTP,
+    IPPROTO_TCP, IPPROTO_UDP, IPPROTO_UDPLITE, O_NONBLOCK, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET,
+    SOCK_STREAM, SOL_SOCKET, SO_ATTACH_FILTER,
 };
 
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 use std::io::ErrorKind::Interrupted;
 use std::io::Result;
+use std::mem::size_of_val;
 
 pub const PROTO_NULL: i32 = 0_i32;
 pub const IPPROTO_L2TP: i32 = 115_i32;
@@ -78,6 +80,35 @@ impl<S: SocketDesc> Socket<S> {
 
     pub fn fd_flags(&self) -> Result<i32> {
         unsafe { cvt(fcntl(self.os(), F_GETFD)) }
+    }
+
+    pub fn attach_filter(&mut self, prog: cbpf::Prog) -> Result<()> {
+        match unsafe {
+            cvt(setsockopt(
+                self.os(),
+                SOL_SOCKET,
+                SO_ATTACH_FILTER,
+                &prog as *const _ as *const c_void,
+                size_of_val(&prog) as socklen_t,
+            ))
+        } {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn recv(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
+        unsafe {
+            let n = cvt({
+                libc::recv(
+                    self.os(),
+                    buf.as_mut_ptr() as *mut c_void,
+                    buf.len(),
+                    flags,
+                )
+            })?;
+            Ok(n as usize)
+        }
     }
 
     pub fn set_nonblocking(&mut self) -> Result<()> {
@@ -236,6 +267,7 @@ impl SocketDesc for TcpSocket {
 
 mod cbpf {
     pub use boolean_expression::*;
+    use bpf;
     pub use std::mem::{forget, size_of_val};
 
     const BPF_LD: u16 = 0x00;
@@ -327,12 +359,7 @@ mod cbpf {
     }
 
     #[derive(Default)]
-    pub struct CompilerState {}
-
-    #[derive(Default)]
-    pub struct Compiler {
-        state: CompilerState,
-    }
+    pub struct Compiler {}
 
     #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
     pub struct Condition {
@@ -422,12 +449,23 @@ mod cbpf {
             Prog::new(instructions)
         }
     }
+    use std::net::Ipv4Addr;
+    pub fn ip_dst(ip: Ipv4Addr) -> Expr<Condition> {
+        Expr::And(
+            Box::new(Expr::Terminal(ether_type(0x0800))),
+            Box::new(Expr::Terminal(Condition::new(
+                vec![Op::new(BPF_ABS | BPF_LD | BPF_W, 0, 0, 30)],
+                BPF_JMP | BPF_JEQ,
+                ip.into(),
+            ))),
+        )
+    }
 
     pub fn ether_type(ether_type: u16) -> Condition {
         Condition::new(
             vec![Op::new(BPF_ABS | BPF_LD | BPF_H, 0, 0, 0x000c)],
             BPF_JMP | BPF_JEQ,
-            ether_type.to_be() as u32,
+            ether_type as u32,
         )
     }
 }
@@ -439,8 +477,24 @@ mod tests {
     #[test]
     fn doit() {
         let compiler = Compiler::default();
-        compiler.compile(Expr::And(Box::new(Expr::Terminal(ether_type(0x0800))), Box::new(Expr::Terminal(ether_type(0x0806)))));
-        compiler.compile(Expr::Or(Box::new(Expr::Terminal(ether_type(0x0800))), Box::new(Expr::Terminal(ether_type(0x0806)))));
+        compiler.compile(Expr::And(
+            Box::new(Expr::Terminal(ether_type(0x0800))),
+            Box::new(Expr::Terminal(ether_type(0x0806))),
+        ));
+        compiler.compile(Expr::Or(
+            Box::new(Expr::Terminal(ether_type(0x0800))),
+            Box::new(Expr::Terminal(ether_type(0x0806))),
+        ));
+    }
+
+    #[test]
+    fn attach_filter() {
+        let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
+        let mut buf = [0; 10];
+        s.attach_filter(Compiler::default().compile(cbpf::ip_dst("1.1.1.1".parse().unwrap())));
+        loop {
+            s.recv(&mut buf, 0).unwrap();
+        }
     }
 
     #[test]

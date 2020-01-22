@@ -1,0 +1,262 @@
+76925 execve("/usr/sbin/tcpdump", ["tcpdump", "-i", "ens32", "arp"], 0x7ffd9fd37670 /* 16 vars */) = 0
+76925 brk(NULL)                         = 0x55bcccf6a000
+76925 access("/etc/ld.so.preload", R_OK) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+76925 fstat(3, {st_mode=S_IFREG|0644, st_size=92364, ...}) = 0
+76925 mmap(NULL, 92364, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f654af65000
+76925 close(3)                          = 0
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libcrypto.so.1.1", O_RDONLY|O_CLOEXEC) = 3
+76925 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\360\10\0\0\0\0\0@\0\0\0\0\0\0\0\240<.\0\0\0\0\0\0\0\0\0@\08\0\t\0@\0\33\0\32\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0hN\10\0\0\0\0\0hN\10\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0\0P\10\0\0\0\0\0\0P\10\0\0\0\0\0\0P\10\0\0\0\0\0\25\333\31\0\0\0\0\0\25\333\31\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0000\"\0\0\0\0\0\0000\"\0\0\0\0\0\0000\"\0\0\0\0\0H\355\10\0\0\0\0\0H\355\10\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\6\0\0\0\220#+\0\0\0\0\0\2203+\0\0\0\0\0\2203+\0\0\0\0\0\340\27\3\0\0\0\0\0\20\\\3\0\0\0\0\0\0\20\0\0\0\0\0\0\2\0\0\0\6\0\0\0H\314-\0\0\0\0\0H\334-\0\0\0\0\0H\334-\0\0\0\0\0000\2\0\0\0\0\0\0000\2\0\0\0\0\0\0\10\0\0\0\0\0\0\0\4\0\0\0\4\0\0\08\2\0\0\0\0\0\08\2\0\0\0\0\0\08\2\0\0\0\0\0\0$\0\0\0\0\0\0\0$\0\0\0\0\0\0\0\4\0\0\0\0\0\0\0P\345td\4\0\0\08e&\0\0\0\0\08e&\0\0\0\0\08e&\0\0\0\0\0\4\306\0\0\0\0\0\0\4\306\0\0\0\0\0\0\4\0\0\0\0\0\0\0Q\345td\6\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0R\345td\4\0\0\0\220#+\0\0\0\0\0\2203+\0\0\0\0\0\2203+\0\0\0\0\0p\374\2\0\0\0\0\0p\374\2\0\0\0\0\0\1\0\0\0\0\0\0\0\4\0\0\0\24\0\0\0\3\0\0\0GNU\0\344\330\vj'\367L\361\253\2755:rb+|_\333\247q\0\0\0\0\3\20\0\0\221\0\0\0\0\2\0\0\17\0\0\0Y\n\30\305M\4\201\300A\0\0\0\0\0\5 \201\0\0\10\30\206\4\240\0\0\0\300\30\0A\0\201\204\3\21\204\244e\0V\10\f\310\0\3\200\24\201\0\212\24\t\3\351\204\10\0$\30\0\2\0050\10\0\1\204\0\0\0\200\255\24t\301\22\10T\4\t\22DE\t@\212\0\f\224\36\0\0W\0\300$\1\200L(\fAC\10D\211\0\0\34\0\0\300\2\22\250\21Al\220\205\205\1D\10\350\"\36\2\20\0\0\4@\10\4\0\6\220\16@\0(\25\3@\22\0a\260\222\2\20\200\20P\0\0242\10\0\0\1\0\350\20 \1\1\1\4\242Dc\10\n\10\0\5\201\3!\2\2013D\0\237\5\2*@\240`\t\4\34\1\0E\304\2\0\210\21@@\"", 832) = 832
+76925 fstat(3, {st_mode=S_IFREG|0644, st_size=3031904, ...}) = 0
+76925 mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f654af63000
+76925 mmap(NULL, 3051424, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f654ac7a000
+76925 mprotect(0x7f654acff000, 2285568, PROT_NONE) = 0
+76925 mmap(0x7f654acff000, 1695744, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x85000) = 0x7f654acff000
+76925 mmap(0x7f654ae9d000, 585728, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x223000) = 0x7f654ae9d000
+76925 mmap(0x7f654af2d000, 204800, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2b2000) = 0x7f654af2d000
+76925 mmap(0x7f654af5f000, 16288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f654af5f000
+76925 close(3)                          = 0
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libpcap.so.0.8", O_RDONLY|O_CLOEXEC) = 3
+76925 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0PW\0\0\0\0\0\0@\0\0\0\0\0\0\0\340\26\4\0\0\0\0\0\0\0\0\0@\08\0\7\0@\0\33\0\32\0\1\0\0\0\5\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\330\356\3\0\0\0\0\0\330\356\3\0\0\0\0\0\0\0 \0\0\0\0\0\1\0\0\0\6\0\0\0P\374\3\0\0\0\0\0P\374#\0\0\0\0\0P\374#\0\0\0\0\0f\31\0\0\0\0\0\0P\33\0\0\0\0\0\0\0\0 \0\0\0\0\0\2\0\0\0\6\0\0\0\340\r\4\0\0\0\0\0\340\r$\0\0\0\0\0\340\r$\0\0\0\0\0\320\1\0\0\0\0\0\0\320\1\0\0\0\0\0\0\10\0\0\0\0\0\0\0\4\0\0\0\4\0\0\0\310\1\0\0\0\0\0\0\310\1\0\0\0\0\0\0\310\1\0\0\0\0\0\0$\0\0\0\0\0\0\0$\0\0\0\0\0\0\0\4\0\0\0\0\0\0\0P\345td\4\0\0\0\250\226\3\0\0\0\0\0\250\226\3\0\0\0\0\0\250\226\3\0\0\0\0\0l\v\0\0\0\0\0\0l\v\0\0\0\0\0\0\4\0\0\0\0\0\0\0Q\345td\6\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0R\345td\4\0\0\0P\374\3\0\0\0\0\0P\374#\0\0\0\0\0P\374#\0\0\0\0\0\260\23\0\0\0\0\0\0\260\23\0\0\0\0\0\0\1\0\0\0\0\0\0\0\4\0\0\0\24\0\0\0\3\0\0\0GNU\0\263\352E]\244\24\307\34^k\233\211\376\200\274\34e\252\3513\0\0\0\0C\0\0\0]\0\0\0\10\0\0\0\t\0\0\0\260\202\vY\313\270(\205@F\304RQ\25\245\20d$Q\204\3\1li\324\306P\0\1\10\0\10Y\310 \304\10\271|\204\320\300\6K\245Q\213\27\10\10\0@ \240\212\1\256 \204\"@\0007\2]\0\0\0\0\0\0\0_\0\0\0\0\0\0\0`\0\0\0b\0\0\0c\0\0\0e\0\0\0f\0\0\0\0\0\0\0\0\0\0\0h\0\0\0j\0\0\0\0\0\0\0o\0\0\0r\0\0\0s\0\0\0t\0\0\0u\0\0\0v\0\0\0w\0\0\0{\0\0\0\0\0\0\0|\0\0\0}\0\0\0\0\0\0\0~\0\0\0\201\0\0\0\202\0\0\0\204\0\0\0\205\0\0\0\0\0\0\0\206\0\0\0\207\0\0\0\214\0\0\0\215\0\0\0\217\0\0\0\220\0\0\0\222\0\0\0\224\0\0\0\230\0\0\0\232\0\0\0\0\0\0\0\0\0\0\0\233\0\0\0\0\0\0\0\234\0\0\0\235\0\0\0\236\0\0\0\241\0\0\0\242\0\0\0\0\0\0\0\0\0\0\0\244\0\0\0\245\0\0\0\0\0\0\0\0\0\0\0\250\0\0\0\251\0\0\0\254\0\0\0\0\0\0\0\255\0\0\0\257\0\0\0\261\0\0\0", 832) = 832
+76925 fstat(3, {st_mode=S_IFREG|0644, st_size=269728, ...}) = 0
+76925 mmap(NULL, 2365344, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f654aa38000
+76925 mprotect(0x7f654aa77000, 2097152, PROT_NONE) = 0
+76925 mmap(0x7f654ac77000, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3f000) = 0x7f654ac77000
+76925 close(3)                          = 0
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+76925 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\260A\2\0\0\0\0\0@\0\0\0\0\0\0\0\360\305\33\0\0\0\0\0\0\0\0\0@\08\0\f\0@\0D\0C\0\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\240\2\0\0\0\0\0\0\240\2\0\0\0\0\0\0\10\0\0\0\0\0\0\0\3\0\0\0\4\0\0\0000\263\30\0\0\0\0\0000\263\30\0\0\0\0\0000\263\30\0\0\0\0\0\34\0\0\0\0\0\0\0\34\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\330\23\2\0\0\0\0\0\330\23\2\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0\0 \2\0\0\0\0\0\0 \2\0\0\0\0\0\0 \2\0\0\0\0\0\330q\24\0\0\0\0\0\330q\24\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0\240\26\0\0\0\0\0\0\240\26\0\0\0\0\0\0\240\26\0\0\0\0\0\10\272\4\0\0\0\0\0\10\272\4\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\6\0\0\0Hf\33\0\0\0\0\0Hv\33\0\0\0\0\0Hv\33\0\0\0\0\0\30R\0\0\0\0\0\0\270\221\0\0\0\0\0\0\0\20\0\0\0\0\0\0\2\0\0\0\6\0\0\0\200\233\33\0\0\0\0\0\200\253\33\0\0\0\0\0\200\253\33\0\0\0\0\0\340\1\0\0\0\0\0\0\340\1\0\0\0\0\0\0\10\0\0\0\0\0\0\0\4\0\0\0\4\0\0\0\340\2\0\0\0\0\0\0\340\2\0\0\0\0\0\0\340\2\0\0\0\0\0\0D\0\0\0\0\0\0\0D\0\0\0\0\0\0\0\4\0\0\0\0\0\0\0\7\0\0\0\4\0\0\0Hf\33\0\0\0\0\0Hv\33\0\0\0\0\0Hv\33\0\0\0\0\0\20\0\0\0\0\0\0\0\220\0\0\0\0\0\0\0\10\0\0\0\0\0\0\0P\345td\4\0\0\0L\263\30\0\0\0\0\0L\263\30\0\0\0\0\0L\263\30\0\0\0\0\0\364a\0\0\0\0\0\0\364a\0\0\0\0\0\0\4\0\0\0\0\0\0\0Q\345td\6\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0R\345td\4\0\0\0Hf\33\0\0\0\0\0Hv\33\0\0\0\0\0Hv\33\0\0\0\0\0\2709\0\0\0\0\0\0\2709\0\0\0\0\0\0\1\0\0\0\0\0\0\0\4\0\0\0\24\0\0\0\3\0\0\0GNU\0\30\271\251\250\305#\345\317\345\265\331F\326\5\320\222B\360\227\230\4\0\0\0\20\0\0\0\1\0\0\0GNU\0\0\0\0\0\3\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0\363\3\0\0\f\0\0\0\0\1\0\0\16\0\0\0\0000\20D\240 \2\1", 832) = 832
+76925 fstat(3, {st_mode=S_IFREG|0755, st_size=1824496, ...}) = 0
+76925 mmap(NULL, 1837056, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f654a877000
+76925 mprotect(0x7f654a899000, 1658880, PROT_NONE) = 0
+76925 mmap(0x7f654a899000, 1343488, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x22000) = 0x7f654a899000
+76925 mmap(0x7f654a9e1000, 311296, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x16a000) = 0x7f654a9e1000
+76925 mmap(0x7f654aa2e000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b6000) = 0x7f654aa2e000
+76925 mmap(0x7f654aa34000, 14336, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f654aa34000
+76925 close(3)                          = 0
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libdl.so.2", O_RDONLY|O_CLOEXEC) = 3
+76925 read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0000\21\0\0\0\0\0\0@\0\0\0\0\0\0\0\3001\0\0\0\0\0\0\0\0\0\0@\08\0\t\0@\0\35\0\34\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\270\r\0\0\0\0\0\0\270\r\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0\0\20\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0\20\0\0\0\0\0\0\201\16\0\0\0\0\0\0\201\16\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0 \0\0\0\0\0\0\0 \0\0\0\0\0\0\0 \0\0\0\0\0\0\250\6\0\0\0\0\0\0\250\6\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\6\0\0\0p-\0\0\0\0\0\0p=\0\0\0\0\0\0p=\0\0\0\0\0\0\30\3\0\0\0\0\0\0\240\3\0\0\0\0\0\0\0\20\0\0\0\0\0\0\2\0\0\0\6\0\0\0\220-\0\0\0\0\0\0\220=\0\0\0\0\0\0\220=\0\0\0\0\0\0\20\2\0\0\0\0\0\0\20\2\0\0\0\0\0\0\10\0\0\0\0\0\0\0\4\0\0\0\4\0\0\08\2\0\0\0\0\0\08\2\0\0\0\0\0\08\2\0\0\0\0\0\0D\0\0\0\0\0\0\0D\0\0\0\0\0\0\0\4\0\0\0\0\0\0\0P\345td\4\0\0\0\244 \0\0\0\0\0\0\244 \0\0\0\0\0\0\244 \0\0\0\0\0\0\324\0\0\0\0\0\0\0\324\0\0\0\0\0\0\0\4\0\0\0\0\0\0\0Q\345td\6\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0R\345td\4\0\0\0p-\0\0\0\0\0\0p=\0\0\0\0\0\0p=\0\0\0\0\0\0\220\2\0\0\0\0\0\0\220\2\0\0\0\0\0\0\1\0\0\0\0\0\0\0\4\0\0\0\24\0\0\0\3\0\0\0GNU\0\323X<t-\324z\252\206\fZ\340\300\305\275\274\322\325Oa\4\0\0\0\20\0\0\0\1\0\0\0GNU\0\0\0\0\0\3\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0\33\0\0\0\34\0\0\0\2\0\0\0\7\0\0\0\230\2\21\0\200H\0\4\22\0 @\203(\10\236\34\0\0\0\0\0\0\0\35\0\0\0\0\0\0\0\0\0\0\0\36\0\0\0\0\0\0\0\37\0\0\0\0\0\0\0 \0\0\0\0\0\0\0!\0\0\0\0\0\0\0\"\0\0\0$\0\0\0%\0\0\0'\0\0\0(\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0)\0\0\0*\0\0\0\0\0\0\0\0\0\0\0\353\26\251\30a\257\0\371\301S\200\30\273\25sB\257\304M\17\221!\374\370\6\2\4\371\3733\373\17\371\31sB\372\31sB\225\263_\31\177\236\320\30a\242\222\6", 832) = 832
+76925 fstat(3, {st_mode=S_IFREG|0644, st_size=14592, ...}) = 0
+76925 mmap(NULL, 16656, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f654a872000
+76925 mmap(0x7f654a873000, 4096, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1000) = 0x7f654a873000
+76925 mmap(0x7f654a874000, 4096, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f654a874000
+76925 mmap(0x7f654a875000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f654a875000
+76925 close(3)                          = 0
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libpthread.so.0", O_RDONLY|O_CLOEXEC) = 3
+76925 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0@l\0\0\0\0\0\0@\0\0\0\0\0\0\0X5\2\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0#\0\"\0\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0h\2\0\0\0\0\0\0h\2\0\0\0\0\0\0\10\0\0\0\0\0\0\0\3\0\0\0\4\0\0\0\240[\1\0\0\0\0\0\240[\1\0\0\0\0\0\240[\1\0\0\0\0\0\34\0\0\0\0\0\0\0\34\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0@]\0\0\0\0\0\0@]\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0\0`\0\0\0\0\0\0\0`\0\0\0\0\0\0\0`\0\0\0\0\0\0M\346\0\0\0\0\0\0M\346\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0P\1\0\0\0\0\0\0P\1\0\0\0\0\0\0P\1\0\0\0\0\0\204W\0\0\0\0\0\0\204W\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\6\0\0\0\310\253\1\0\0\0\0\0\310\273\1\0\0\0\0\0\310\273\1\0\0\0\0\0h\7\0\0\0\0\0\0\370H\0\0\0\0\0\0\0\20\0\0\0\0\0\0\2\0\0\0\6\0\0\0\200\255\1\0\0\0\0\0\200\275\1\0\0\0\0\0\200\275\1\0\0\0\0\0000\2\0\0\0\0\0\0000\2\0\0\0\0\0\0\10\0\0\0\0\0\0\0\4\0\0\0\4\0\0\0\250\2\0\0\0\0\0\0\250\2\0\0\0\0\0\0\250\2\0\0\0\0\0\0D\0\0\0\0\0\0\0D\0\0\0\0\0\0\0\4\0\0\0\0\0\0\0P\345td\4\0\0\0\274[\1\0\0\0\0\0\274[\1\0\0\0\0\0\274[\1\0\0\0\0\0\254\t\0\0\0\0\0\0\254\t\0\0\0\0\0\0\4\0\0\0\0\0\0\0Q\345td\6\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0R\345td\4\0\0\0\310\253\1\0\0\0\0\0\310\273\1\0\0\0\0\0\310\273\1\0\0\0\0\08\4\0\0\0\0\0\08\4\0\0\0\0\0\0\1\0\0\0\0\0\0\0\4\0\0\0\24\0\0\0\3\0\0\0GNU\0\351\21\24\230z\1G\275\5\n\335\275Y\36\270\231K)\364\263\4\0\0\0\20\0\0\0\1\0\0\0GNU\0\0\0\0\0\3\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0\f\2\0\0c\0\0\0 \0\0\0\v\0\0\0\31#\2\261\1\10\20\2@Ae\370\3\10\10\25\200 \0\0\0\0\200\300\321Q\0\0\0\222\353\3020D\0\10\20A\0\2\0\2\f\1\200\v\221\1\330\240\r\240@\230 \244\201\21\n\202-l@g", 832) = 832
+76925 fstat(3, {st_mode=S_IFREG|0755, st_size=146968, ...}) = 0
+76925 mmap(NULL, 132288, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f654a851000
+76925 mmap(0x7f654a857000, 61440, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x6000) = 0x7f654a857000
+76925 mmap(0x7f654a866000, 24576, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x15000) = 0x7f654a866000
+76925 mmap(0x7f654a86c000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1a000) = 0x7f654a86c000
+76925 mmap(0x7f654a86e000, 13504, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f654a86e000
+76925 close(3)                          = 0
+76925 mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f654a84f000
+76925 arch_prctl(ARCH_SET_FS, 0x7f654a850200) = 0
+76925 mprotect(0x7f654aa2e000, 16384, PROT_READ) = 0
+76925 mprotect(0x7f654a86c000, 4096, PROT_READ) = 0
+76925 mprotect(0x7f654a875000, 4096, PROT_READ) = 0
+76925 mprotect(0x7f654ac77000, 8192, PROT_READ) = 0
+76925 mprotect(0x7f654af2d000, 196608, PROT_READ) = 0
+76925 mprotect(0x55bccc89c000, 110592, PROT_READ) = 0
+76925 mprotect(0x7f654afa3000, 4096, PROT_READ) = 0
+76925 munmap(0x7f654af65000, 92364)     = 0
+76925 set_tid_address(0x7f654a8504d0)   = 76925
+76925 set_robust_list(0x7f654a8504e0, 24) = 0
+76925 rt_sigaction(SIGRTMIN, {sa_handler=0x7f654a8576b0, sa_mask=[], sa_flags=SA_RESTORER|SA_SIGINFO, sa_restorer=0x7f654a863730}, NULL, 8) = 0
+76925 rt_sigaction(SIGRT_1, {sa_handler=0x7f654a857740, sa_mask=[], sa_flags=SA_RESTORER|SA_RESTART|SA_SIGINFO, sa_restorer=0x7f654a863730}, NULL, 8) = 0
+76925 rt_sigprocmask(SIG_UNBLOCK, [RTMIN RT_1], NULL, 8) = 0
+76925 prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+76925 brk(NULL)                         = 0x55bcccf6a000
+76925 brk(0x55bcccf8b000)               = 0x55bcccf8b000
+76925 openat(AT_FDCWD, "/etc/localtime", O_RDONLY|O_CLOEXEC) = 3
+76925 fstat(3, {st_mode=S_IFREG|0644, st_size=2321, ...}) = 0
+76925 fstat(3, {st_mode=S_IFREG|0644, st_size=2321, ...}) = 0
+76925 read(3, "TZif3\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\6\0\0\0\6\0\0\0\0\0\0\0\223\0\0\0\6\0\0\0\25\200\0\0\0\2360E\210\310Y\262\340\314\345\301P\315\254\376\0\316\306\364\320\317\217f\340\320\251y\320\321\204`\340\322\212\311p\323e\260\200\324k\340\320\327Z\24`\327\337\37\300\330/\265p\331\36F\340\332\20\350\360\332\353\263\340\333\2644\0\334\271 \340\335\340\215\0\336\264\316\200\337\244\277\200\340\213v\0\341V}\0\342\276J`\34364\320\344\234\367\0\345\26\26\320\346t\323\340\347\21\322\200\350'\377\0\350\350O\320\10|\213\340\10\375\260\320\t\366\352`\n\2463\320\23\350\252\340\24 \t\340\32\371t\340\33\215\34\340\34\276\370\340\35\211\361\320\36\314\377`\37`\231P \202\261`!I\265\320\"^\236\340# ]P$Z0`%\0?P&\v\355\340&\326\346\320'\353\317\340(\300\3P)\324\354`*\251\37\320+\273e\340,\211\1\320-\233G\340._\251P/{)\3400H\305\3201H\226\3402<nP31\263`4\32\376\3205\21\225`5\361\246P7\4\10\2007\317\1p8\366_\2009\334\371\340:\320\355p;\256[`<\243\240p=\240\262`>\203\202p?|\237\340@s6pAP\244`BL\217\0CHOpD,q\0E\36\366\360F\fS\0F\354c\360G\3545\0H\347\365pI\314\27\0J\276\234\360K\253\371\0L\214\t\360M\225\25\200N\207\233pOt\367\200P^B\360QT\331\200RlIpS4\273\200TL+pU\24\235\200V,\rpV\364\177\200X\25)\360X\324a\200Y\365\v\360Z\264C\200[\324\355\360\\\235`\0]\264\317\360^}B\0_\224\261\360`]$\0a}\316pb=\6\0c]\260pd\34\350\0e=\222pf\6\4\200g\35tpg\345\346\200h\375Vpi\305\310\200j\3358pk\245\252\200l\306T\360m\205\214\200n\2466\360oen\200p\206\30\360qN\213\0re\372\360s.m\0tE\334\360u\16O\0v.\371pv\3561\0x\16\333px\316\23\0y\356\275pz\255\365\0{\316\237p|\227\21\200}\256\201p~v\363\200\177\216cp\1\3\2\3\2\3\2\3\2\3\2\3\4\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\0\0!\6\0\0\0\0 \370\0\4\0\0*0\1\10\0\0\34 \0\f\0\08@\1\20\0\0*0\1\10LMT\0JMT\0IDT\0IST\0IDDT\0\0\0\0\0\0\0\0\0\0\0\0\0TZif3\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\6\0\0\0\6\0\0\0\0\0\0\0\224\0\0\0\6\0\0\0\25\370\0\0\0\0\0\0\0\377\377\377\377V\266\302\372\377\377\377\377\2360E\210\377\377\377\377\310Y\262\340\377\377\377\377\314\345\301P\377\377\377\377\315\254\376\0\377\377\377\377\316\306\364\320\377\377\377\377\317\217f\340\377\377\377\377\320\251y\320\377\377\377\377\321\204`\340\377\377\377\377\322\212\311p\377\377\377\377\323e\260\200\377\377\377\377\324k\340\320\377\377\377\377"..., 4096) = 2321
+76925 lseek(3, -1473, SEEK_CUR)         = 848
+76925 read(3, "TZif3\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\6\0\0\0\6\0\0\0\0\0\0\0\224\0\0\0\6\0\0\0\25\370\0\0\0\0\0\0\0\377\377\377\377V\266\302\372\377\377\377\377\2360E\210\377\377\377\377\310Y\262\340\377\377\377\377\314\345\301P\377\377\377\377\315\254\376\0\377\377\377\377\316\306\364\320\377\377\377\377\317\217f\340\377\377\377\377\320\251y\320\377\377\377\377\321\204`\340\377\377\377\377\322\212\311p\377\377\377\377\323e\260\200\377\377\377\377\324k\340\320\377\377\377\377\327Z\24`\377\377\377\377\327\337\37\300\377\377\377\377\330/\265p\377\377\377\377\331\36F\340\377\377\377\377\332\20\350\360\377\377\377\377\332\353\263\340\377\377\377\377\333\2644\0\377\377\377\377\334\271 \340\377\377\377\377\335\340\215\0\377\377\377\377\336\264\316\200\377\377\377\377\337\244\277\200\377\377\377\377\340\213v\0\377\377\377\377\341V}\0\377\377\377\377\342\276J`\377\377\377\377\34364\320\377\377\377\377\344\234\367\0\377\377\377\377\345\26\26\320\377\377\377\377\346t\323\340\377\377\377\377\347\21\322\200\377\377\377\377\350'\377\0\377\377\377\377\350\350O\320\0\0\0\0\10|\213\340\0\0\0\0\10\375\260\320\0\0\0\0\t\366\352`\0\0\0\0\n\2463\320\0\0\0\0\23\350\252\340\0\0\0\0\24 \t\340\0\0\0\0\32\371t\340\0\0\0\0\33\215\34\340\0\0\0\0\34\276\370\340\0\0\0\0\35\211\361\320\0\0\0\0\36\314\377`\0\0\0\0\37`\231P\0\0\0\0 \202\261`\0\0\0\0!I\265\320\0\0\0\0\"^\236\340\0\0\0\0# ]P\0\0\0\0$Z0`\0\0\0\0%\0?P\0\0\0\0&\v\355\340\0\0\0\0&\326\346\320\0\0\0\0'\353\317\340\0\0\0\0(\300\3P\0\0\0\0)\324\354`\0\0\0\0*\251\37\320\0\0\0\0+\273e\340\0\0\0\0,\211\1\320\0\0\0\0-\233G\340\0\0\0\0._\251P\0\0\0\0/{)\340\0\0\0\0000H\305\320\0\0\0\0001H\226\340\0\0\0\0002<nP\0\0\0\00031\263`\0\0\0\0004\32\376\320\0\0\0\0005\21\225`\0\0\0\0005\361\246P\0\0\0\0007\4\10\200\0\0\0\0007\317\1p\0\0\0\08\366_\200\0\0\0\09\334\371\340\0\0\0\0:\320\355p\0\0\0\0;\256[`\0\0\0\0<\243\240p\0\0\0\0=\240\262`\0\0\0\0>\203\202p\0\0\0\0?|\237\340\0\0\0\0@s6p\0\0\0\0AP\244`\0\0\0\0BL\217\0\0\0\0\0CHOp\0\0\0\0D,q\0\0\0\0\0E\36\366\360\0\0\0\0F\fS\0\0\0\0\0F\354c\360\0\0\0\0G\3545\0\0\0\0\0H\347\365p\0\0\0\0I\314\27\0\0\0\0\0J\276\234\360\0\0\0\0K\253\371\0\0\0\0\0L\214\t\360\0\0\0\0M\225\25\200\0\0\0\0N\207\233p\0\0\0\0Ot\367\200\0\0\0\0P^B\360\0\0\0\0QT\331\200\0\0\0\0RlIp\0\0\0\0S4\273\200\0\0\0\0TL+p\0\0\0\0U\24\235\200\0\0\0\0V,\rp\0\0\0\0V\364\177\200\0\0\0\0X\25)\360\0\0\0\0X\324a\200\0\0\0\0Y\365\v\360\0\0\0\0Z\264C\200\0\0\0\0[\324\355\360\0\0\0\0\\\235`\0\0\0\0\0]\264\317\360\0\0\0\0^}B\0\0\0\0\0_\224\261\360\0\0\0\0`]$\0\0\0\0\0a}\316p\0\0\0\0b=\6\0\0\0\0\0c]\260p\0\0\0\0d\34\350\0\0\0\0\0"..., 4096) = 1473
+76925 close(3)                          = 0
+76925 stat("/etc/localtime", {st_mode=S_IFREG|0644, st_size=2321, ...}) = 0
+76925 ioctl(1, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+76925 socket(AF_UNIX, SOCK_RAW, 0)      = 3
+76925 ioctl(3, SIOCETHTOOL, 0x7ffdd1a54de0) = 0
+76925 close(3)                          = 0
+76925 socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL)) = 3
+76925 ioctl(3, SIOCBONDINFOQUERY, 0x7ffdd1a54e40) = -1 EOPNOTSUPP (Operation not supported)
+76925 ioctl(3, SIOCGIWMODE, 0x7ffdd1a54e80) = -1 EOPNOTSUPP (Operation not supported)
+76925 close(3)                          = 0
+76925 openat(AT_FDCWD, "/proc/net/dev", O_RDONLY) = 3
+76925 fstat(3, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+76925 read(3, "Inter-|   Receive                                                |  Transmit\n face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n ens32: 6850194622 5289736    0    0    0     0          0         0 193948932 2512035    0    0    0     0       0          0\n    lo: 1175123   14965    0    0    0     0          0         0  1175123   14965    0    0    0     0       0          0\n tunl0:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0\ndocker0: 47836609 1187733    0    0    0     0          0         0 4042570687 2294580    0    0    0     0       0          0\n", 1024) = 700
+76925 close(3)                          = 0
+76925 socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL)) = 3
+76925 ioctl(3, SIOCGIFINDEX, {ifr_name="lo", }) = 0
+76925 ioctl(3, SIOCGIFHWADDR, {ifr_name="ens32", ifr_hwaddr={sa_family=ARPHRD_ETHER, sa_data=00:0c:29:75:62:c4}}) = 0
+76925 stat("/sys/class/net/ens32/wireless", 0x7ffdd1a54b90) = -1 ENOENT (No such file or directory)
+76925 ioctl(3, SIOCBONDINFOQUERY, 0x7ffdd1a54af0) = -1 EOPNOTSUPP (Operation not supported)
+76925 ioctl(3, SIOCGIWNAME, 0x7ffdd1a54b30) = -1 EOPNOTSUPP (Operation not supported)
+76925 ioctl(3, SIOCGIFINDEX, {ifr_name="ens32", }) = 0
+76925 bind(3, {sa_family=AF_PACKET, sll_protocol=htons(ETH_P_ALL), sll_ifindex=if_nametoindex("ens32"), sll_hatype=ARPHRD_NETROM, sll_pkttype=PACKET_HOST, sll_halen=0}, 20) = 0
+76925 getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+76925 setsockopt(3, SOL_PACKET, PACKET_ADD_MEMBERSHIP, {mr_ifindex=if_nametoindex("ens32"), mr_type=PACKET_MR_PROMISC, mr_alen=0, mr_address=}, 16) = 0
+76925 setsockopt(3, SOL_PACKET, PACKET_AUXDATA, [1], 4) = 0
+76925 getsockopt(3, SOL_SOCKET, SO_BPF_EXTENSIONS, [64], [4]) = 0
+76925 mmap(NULL, 266240, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f654a80e000
+76925 getsockopt(3, SOL_PACKET, PACKET_HDRLEN, [32], [4]) = 0
+76925 setsockopt(3, SOL_PACKET, PACKET_VERSION, [1], 4) = 0
+76925 setsockopt(3, SOL_PACKET, PACKET_RESERVE, [4], 4) = 0
+76925 ioctl(3, SIOCETHTOOL, 0x7ffdd1a54d30) = 0
+76925 getsockopt(3, SOL_SOCKET, SO_TYPE, [3], [4]) = 0
+76925 getsockopt(3, SOL_PACKET, PACKET_RESERVE, [4], [4]) = 0
+76925 setsockopt(3, SOL_PACKET, PACKET_RX_RING, 0x7ffdd1a54df0, 28) = 0
+76925 mmap(NULL, 3670016, PROT_READ|PROT_WRITE, MAP_SHARED, 3, 0) = 0x7f654a48e000
+76925 uname({sysname="Linux", nodename="deb", ...}) = 0
+76925 getgid()                          = 0
+76925 setgid(0)                         = 0
+76925 getuid()                          = 0
+76925 setuid(0)                         = 0
+76925 openat(AT_FDCWD, "/etc/nsswitch.conf", O_RDONLY|O_CLOEXEC) = 4
+76925 fstat(4, {st_mode=S_IFREG|0644, st_size=553, ...}) = 0
+76925 read(4, "# /etc/nsswitch.conf\n#\n# Example configuration of GNU Name Service Switch functionality.\n# If you have the `glibc-doc-reference' and `info' packages installed, try:\n# `info libc \"Name Service Switch\"' for information about this file.\n\npasswd:         files systemd\ngroup:          files systemd\nshadow:         files\ngshadow:        files\n\nhosts:          files mdns4_minimal [NOTFOUND=return] dns myhostname\nnetworks:       files\n\nprotocols:      db files\nservices:       db files\nethers:         db files\nrpc:            db files\n\nnetgroup:       nis\n", 4096) = 553
+76925 read(4, "", 4096)                 = 0
+76925 close(4)                          = 0
+76925 openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 4
+76925 fstat(4, {st_mode=S_IFREG|0644, st_size=92364, ...}) = 0
+76925 mmap(NULL, 92364, PROT_READ, MAP_PRIVATE, 4, 0) = 0x7f654af65000
+76925 close(4)                          = 0
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/tls/haswell/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/x86_64-linux-gnu/tls/haswell/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/tls/haswell/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/x86_64-linux-gnu/tls/haswell", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/tls/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/x86_64-linux-gnu/tls/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/tls/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/x86_64-linux-gnu/tls", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/haswell/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/x86_64-linux-gnu/haswell/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/haswell/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/x86_64-linux-gnu/haswell", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/x86_64-linux-gnu/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/x86_64-linux-gnu", {st_mode=S_IFDIR|0755, st_size=86016, ...}) = 0
+76925 openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/tls/haswell/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/x86_64-linux-gnu/tls/haswell/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/tls/haswell/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/x86_64-linux-gnu/tls/haswell", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/tls/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/x86_64-linux-gnu/tls/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/tls/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/x86_64-linux-gnu/tls", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/haswell/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/x86_64-linux-gnu/haswell/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/haswell/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/x86_64-linux-gnu/haswell", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/x86_64-linux-gnu/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/x86_64-linux-gnu/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/x86_64-linux-gnu", {st_mode=S_IFDIR|0755, st_size=86016, ...}) = 0
+76925 openat(AT_FDCWD, "/lib/tls/haswell/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/tls/haswell/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/tls/haswell/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/tls/haswell", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/tls/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/tls/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/tls/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/tls", 0x7ffdd1a53f00)  = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/haswell/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/haswell/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/haswell/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/haswell", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/lib/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/lib", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+76925 openat(AT_FDCWD, "/usr/lib/tls/haswell/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/tls/haswell/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/tls/haswell/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/tls/haswell", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/tls/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/tls/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/tls/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/tls", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/haswell/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/haswell/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/haswell/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/haswell", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/x86_64/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib/x86_64", 0x7ffdd1a53f00) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/usr/lib/libnss_db.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 stat("/usr/lib", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+76925 munmap(0x7f654af65000, 92364)     = 0
+76925 openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 4
+76925 fstat(4, {st_mode=S_IFREG|0644, st_size=92364, ...}) = 0
+76925 mmap(NULL, 92364, PROT_READ, MAP_PRIVATE, 4, 0) = 0x7f654af65000
+76925 close(4)                          = 0
+76925 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libnss_files.so.2", O_RDONLY|O_CLOEXEC) = 4
+76925 read(4, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0003\0\0\0\0\0\0@\0\0\0\0\0\0\0\260\322\0\0\0\0\0\0\0\0\0\0@\08\0\t\0@\0\35\0\34\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\20!\0\0\0\0\0\0\20!\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0\0000\0\0\0\0\0\0\0000\0\0\0\0\0\0\0000\0\0\0\0\0\0\201e\0\0\0\0\0\0\201e\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0\240\0\0\0\0\0\0\0\240\0\0\0\0\0\0\0\240\0\0\0\0\0\0\340\37\0\0\0\0\0\0\340\37\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\6\0\0\0\230\315\0\0\0\0\0\0\230\335\0\0\0\0\0\0\230\335\0\0\0\0\0\0\340\3\0\0\0\0\0\0\240i\0\0\0\0\0\0\0\20\0\0\0\0\0\0\2\0\0\0\6\0\0\0\250\315\0\0\0\0\0\0\250\335\0\0\0\0\0\0\250\335\0\0\0\0\0\0\20\2\0\0\0\0\0\0\20\2\0\0\0\0\0\0\10\0\0\0\0\0\0\0\4\0\0\0\4\0\0\08\2\0\0\0\0\0\08\2\0\0\0\0\0\08\2\0\0\0\0\0\0D\0\0\0\0\0\0\0D\0\0\0\0\0\0\0\4\0\0\0\0\0\0\0P\345td\4\0\0\0\0\242\0\0\0\0\0\0\0\242\0\0\0\0\0\0\0\242\0\0\0\0\0\0\f\3\0\0\0\0\0\0\f\3\0\0\0\0\0\0\4\0\0\0\0\0\0\0Q\345td\6\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0R\345td\4\0\0\0\230\315\0\0\0\0\0\0\230\335\0\0\0\0\0\0\230\335\0\0\0\0\0\0h\2\0\0\0\0\0\0h\2\0\0\0\0\0\0\1\0\0\0\0\0\0\0\4\0\0\0\24\0\0\0\3\0\0\0GNU\0K\377\213x.\26\2\305\226\350V\275\357\6\346B\345\16\177\247\4\0\0\0\20\0\0\0\1\0\0\0GNU\0\0\0\0\0\3\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0k\0\0\0004\0\0\0\10\0\0\0\t\0\0\0\22F\344\25\240\245\201\0\t\10\28\223\6\310\0\0\0z\0]\201\240Jx\2108*\220\200\0$\7!\5\24)\"\226<\0\4\0\33\0\20\2\0\0@\10\201\3100\200\200B@\206\0\302\0\200\3004\0\0\0005\0\0\0\0\0\0\0006\0\0\0007\0\0\08\0\0\09\0\0\0:\0\0\0\0\0\0\0;\0\0\0\0\0\0\0<\0\0\0>\0\0\0?\0\0\0\0\0\0\0A\0\0\0\0\0\0\0C\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0D\0\0\0F\0\0\0\0\0\0\0G\0\0\0", 832) = 832
+76925 fstat(4, {st_mode=S_IFREG|0644, st_size=55792, ...}) = 0
+76925 mmap(NULL, 83768, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 4, 0) = 0x7f654a479000
+76925 mprotect(0x7f654a47c000, 40960, PROT_NONE) = 0
+76925 mmap(0x7f654a47c000, 28672, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0x3000) = 0x7f654a47c000
+76925 mmap(0x7f654a483000, 8192, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0xa000) = 0x7f654a483000
+76925 mmap(0x7f654a486000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 4, 0xc000) = 0x7f654a486000
+76925 mmap(0x7f654a488000, 22328, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f654a488000
+76925 close(4)                          = 0
+76925 mprotect(0x7f654a486000, 4096, PROT_READ) = 0
+76925 munmap(0x7f654af65000, 92364)     = 0
+76925 openat(AT_FDCWD, "/etc/ethers", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+76925 openat(AT_FDCWD, "/etc/services", O_RDONLY|O_CLOEXEC) = 4
+76925 lseek(4, 0, SEEK_CUR)             = 0
+76925 fstat(4, {st_mode=S_IFREG|0644, st_size=18774, ...}) = 0
+76925 read(4, "# Network services, Internet style\n#\n# Note that it is presently the policy of IANA to assign a single well-known\n# port number for both TCP and UDP; hence, officially ports have two entries\n# even if the protocol doesn't support UDP operations.\n#\n# Updated from https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml .\n#\n# New ports will be added on request if they have been officially assigned\n# by IANA and used in the real-world or are needed by a debian package.\n# If you need a huge list of used numbers please install the nmap package.\n\ntcpmux\t\t1/tcp\t\t\t\t# TCP port service multiplexer\necho\t\t7/tcp\necho\t\t7/udp\ndiscard\t\t9/tcp\t\tsink null\ndiscard\t\t9/udp\t\tsink null\nsystat\t\t11/tcp\t\tusers\ndaytime\t\t13/tcp\ndaytime\t\t13/udp\nnetstat\t\t15/tcp\nqotd\t\t17/tcp\t\tquote\nmsp\t\t18/tcp\t\t\t\t# message send protocol\nmsp\t\t18/udp\nchargen\t\t19/tcp\t\tttytst source\nchargen\t\t19/udp\t\tttytst source\nftp-data\t20/tcp\nftp\t\t21/tcp\nfsp\t\t21/udp\t\tfspd\nssh\t\t22/tcp\t\t\t\t# SSH Remote Login Protocol\nt"..., 4096) = 4096
+76925 lseek(4, 0, SEEK_CUR)             = 4096
+76925 read(4, "d\t\t464/tcp\nkpasswd\t\t464/udp\nsubmissions\t465/tcp\t\tssmtp smtps urd # Submission over TLS [RFC8314]\nsaft\t\t487/tcp\t\t\t# Simple Asynchronous File Transfer\nsaft\t\t487/udp\nisakmp\t\t500/tcp\t\t\t# IPsec - Internet Security Association\nisakmp\t\t500/udp\t\t\t#  and Key Management Protocol\nrtsp\t\t554/tcp\t\t\t# Real Time Stream Control Protocol\nrtsp\t\t554/udp\nnqs\t\t607/tcp\t\t\t\t# Network Queuing system\nnqs\t\t607/udp\nnpmp-local\t610/tcp\t\tdqs313_qmaster\t\t# npmp-local / DQS\nnpmp-local\t610/udp\t\tdqs313_qmaster\nnpmp-gui\t611/tcp\t\tdqs313_execd\t\t# npmp-gui / DQS\nnpmp-gui\t611/udp\t\tdqs313_execd\nhmmp-ind\t612/tcp\t\tdqs313_intercell\t# HMMP Indication / DQS\nhmmp-ind\t612/udp\t\tdqs313_intercell\nasf-rmcp\t623/udp\t\t# ASF Remote Management and Control Protocol\nqmqp\t\t628/tcp\nqmqp\t\t628/udp\nipp\t\t631/tcp\t\t\t\t# Internet Printing Protocol\nipp\t\t631/udp\n#\n# UNIX specific services\n#\nexec\t\t512/tcp\nbiff\t\t512/udp\t\tcomsat\nlogin\t\t513/tcp\nwho\t\t513/udp\t\twhod\nshell\t\t514/tcp\t\tcmd\t\t# no passwords used\nsyslog\t\t514/udp\nprinter\t\t515/tcp\t\tspooler\t\t# line printer"..., 4096) = 4096
+76925 lseek(4, 0, SEEK_CUR)             = 8192
+76925 read(4, "p\npipe-server\t2010/tcp\tpipe_server\nnfs\t\t2049/tcp\t\t\t# Network File System\nnfs\t\t2049/udp\t\t\t# Network File System\ngnunet\t\t2086/tcp\ngnunet\t\t2086/udp\nrtcm-sc104\t2101/tcp\t\t\t# RTCM SC-104 IANA 1/29/99\nrtcm-sc104\t2101/udp\ngsigatekeeper\t2119/tcp\ngsigatekeeper\t2119/udp\ngris\t\t2135/tcp\t\t# Grid Resource Information Server\ngris\t\t2135/udp\ncvspserver\t2401/tcp\t\t\t# CVS client/server operations\ncvspserver\t2401/udp\nvenus\t\t2430/tcp\t\t\t# codacon port\nvenus\t\t2430/udp\t\t\t# Venus callback/wbc interface\nvenus-se\t2431/tcp\t\t\t# tcp side effects\nvenus-se\t2431/udp\t\t\t# udp sftp side effect\ncodasrv\t\t2432/tcp\t\t\t# not used\ncodasrv\t\t2432/udp\t\t\t# server port\ncodasrv-se\t2433/tcp\t\t\t# tcp side effects\ncodasrv-se\t2433/udp\t\t\t# udp sftp side effect\nmon\t\t2583/tcp\t\t\t# MON traps\nmon\t\t2583/udp\ndict\t\t2628/tcp\t\t\t# Dictionary server\ndict\t\t2628/udp\nf5-globalsite\t2792/tcp\nf5-globalsite\t2792/udp\ngsiftp\t\t2811/tcp\ngsiftp\t\t2811/udp\ngpsd\t\t2947/tcp\ngpsd\t\t2947/udp\ngds-db\t\t3050/tcp\tgds_db\t\t# InterBase server\ngds-db\t\t3050/udp\tgds_db\nicpv2\t\t3130/tc"..., 4096) = 4096
+76925 lseek(4, 0, SEEK_CUR)             = 12288
+76925 read(4, "verseer process\nafs3-bos\t7007/udp\nafs3-update\t7008/tcp\t\t\t# server-to-server updater\nafs3-update\t7008/udp\nafs3-rmtsys\t7009/tcp\t\t\t# remote cache manager service\nafs3-rmtsys\t7009/udp\nfont-service\t7100/tcp\txfs\t\t# X Font Service\nfont-service\t7100/udp\txfs\nhttp-alt\t8080/tcp\twebcache\t# WWW caching service\nhttp-alt\t8080/udp\npuppet\t\t8140/tcp\t\t\t# The Puppet master service\nbacula-dir\t9101/tcp\t\t\t# Bacula Director\nbacula-dir\t9101/udp\nbacula-fd\t9102/tcp\t\t\t# Bacula File Daemon\nbacula-fd\t9102/udp\nbacula-sd\t9103/tcp\t\t\t# Bacula Storage Daemon\nbacula-sd\t9103/udp\nxmms2\t\t9667/tcp\t# Cross-platform Music Multiplexing System\nxmms2\t\t9667/udp\nnbd\t\t10809/tcp\t\t\t# Linux Network Block Device\nzabbix-agent\t10050/tcp\t\t\t# Zabbix Agent\nzabbix-agent\t10050/udp\nzabbix-trapper\t10051/tcp\t\t\t# Zabbix Trapper\nzabbix-trapper\t10051/udp\namanda\t\t10080/tcp\t\t\t# amanda backup services\namanda\t\t10080/udp\ndicom\t\t11112/tcp\nhkp\t\t11371/tcp\t\t\t# OpenPGP HTTP Keyserver\nhkp\t\t11371/udp\nbprd\t\t13720/tcp\t\t\t# VERITAS NetBackup\nbprd\t\t13720/udp\nbpdbm\t\t"..., 4096) = 4096
+76925 lseek(4, 0, SEEK_CUR)             = 16384
+76925 read(4, "5/tcp\t\t\t# bgpd vty (zebra)\nospf6d\t\t2606/tcp\t\t\t# ospf6d vty (zebra)\nospfapi\t\t2607/tcp\t\t\t# OSPF-API\nisisd\t\t2608/tcp\t\t\t# ISISd vty (zebra)\nafbackup\t2988/tcp\t\t\t# Afbackup system\nafbackup\t2988/udp\nafmbackup\t2989/tcp\t\t\t# Afmbackup system\nafmbackup\t2989/udp\nxtell\t\t4224/tcp\t\t\t# xtell server\nfax\t\t4557/tcp\t\t\t# FAX transmission service (old)\nhylafax\t\t4559/tcp\t\t\t# HylaFAX client-server protocol (new)\ndistmp3\t\t4600/tcp\t\t\t# distmp3host daemon\nmunin\t\t4949/tcp\tlrrd\t\t# Munin\nenbd-cstatd\t5051/tcp\t\t\t# ENBD client statd\nenbd-sstatd\t5052/tcp\t\t\t# ENBD server statd\npcrd\t\t5151/tcp\t\t\t# PCR-1000 Daemon\nnoclog\t\t5354/tcp\t\t\t# noclogd with TCP (nocol)\nnoclog\t\t5354/udp\t\t\t# noclogd with UDP (nocol)\nhostmon\t\t5355/tcp\t\t\t# hostmon uses TCP (nocol)\nhostmon\t\t5355/udp\t\t\t# hostmon uses UDP (nocol)\nrplay\t\t5555/udp\t\t\t# RPlay audio service\nnrpe\t\t5666/tcp\t\t\t# Nagios Remote Plugin Executor\nnsca\t\t5667/tcp\t\t\t# Nagios Agent - NSCA\nmrtd\t\t5674/tcp\t\t\t# MRT Routing Daemon\nbgpsim\t\t5675/tcp\t\t\t# MRT Routing Simulator\ncanna\t\t5680/tcp\t\t\t# c"..., 4096) = 2390
+76925 lseek(4, 0, SEEK_CUR)             = 18774
+76925 read(4, "", 4096)                 = 0
+76925 close(4)                          = 0
+76925 rt_sigaction(SIGPIPE, {sa_handler=0x55bccc7e6730, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x7f654a8ae840}, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+76925 rt_sigaction(SIGTERM, {sa_handler=0x55bccc7e6730, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x7f654a8ae840}, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+76925 rt_sigaction(SIGINT, {sa_handler=0x55bccc7e6730, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x7f654a8ae840}, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+76925 rt_sigaction(SIGCHLD, {sa_handler=0x55bccc7e6720, sa_mask=[], sa_flags=SA_RESTORER|SA_RESTART, sa_restorer=0x7f654a8ae840}, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+76925 rt_sigaction(SIGHUP, {sa_handler=0x55bccc7e6730, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x7f654a8ae840}, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+76925 getuid()                          = 0
+76925 setsockopt(3, SOL_SOCKET, SO_ATTACH_FILTER, {len=1, filter=0x7f654ac793e8}, 16) = 0
+76925 fcntl(3, F_GETFL)                 = 0x2 (flags O_RDWR)
+76925 fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
+76925 recvfrom(3, 0x7ffdd1a54ea7, 1, MSG_TRUNC, NULL, NULL) = -1 EAGAIN (Resource temporarily unavailable)
+76925 fcntl(3, F_SETFL, O_RDWR)         = 0
+76925 setsockopt(3, SOL_SOCKET, SO_ATTACH_FILTER, {len=4, filter=0x55bcccf6d9a0}, 16) = 0
+76925 rt_sigaction(SIGUSR1, {sa_handler=0x55bccc7e7440, sa_mask=[], sa_flags=SA_RESTORER, sa_restorer=0x7f654a8ae840}, {sa_handler=SIG_DFL, sa_mask=[], sa_flags=0}, 8) = 0
+76925 write(2, "tcpdump: verbose output suppressed, use -v or -vv for full protocol decode\n", 75) = 75
+76925 write(2, "listening on ens32, link-type EN10MB (Ethernet), capture size 262144 bytes\n", 75) = 75
+76925 poll([{fd=3, events=POLLIN}], 1, 1000) = 0 (Timeout)
+76925 poll([{fd=3, events=POLLIN}], 1, 1000) = 0 (Timeout)
+76925 poll([{fd=3, events=POLLIN}], 1, 1000) = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
+76925 --- SIGINT {si_signo=SIGINT, si_code=SI_KERNEL} ---
+76925 alarm(0)                          = 0
+76925 rt_sigreturn({mask=[]})           = -1 EINTR (Interrupted system call)
+76925 fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0x2), ...}) = 0
+76925 write(1, "\n", 1)                 = 1
+76925 openat(AT_FDCWD, "/proc/net/dev", O_RDONLY) = 4
+76925 fstat(4, {st_mode=S_IFREG|0444, st_size=0, ...}) = 0
+76925 read(4, "Inter-|   Receive                                                |  Transmit\n face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n ens32: 6851348337 5290549    0    0    0     0          0         0 193969572 2512379    0    0    0     0       0          0\n    lo: 1175123   14965    0    0    0     0          0         0  1175123   14965    0    0    0     0       0          0\n tunl0:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0\ndocker0: 47836609 1187733    0    0    0     0          0         0 4042570687 2294580    0    0    0     0       0          0\n", 1024) = 700
+76925 close(4)                          = 0
+76925 getsockopt(3, SOL_PACKET, PACKET_STATISTICS, {tp_packets=47, tp_drops=33}, [8]) = 0
+76925 write(2, "0 packets captured", 18) = 18
+76925 write(2, "\n", 1)                 = 1
+76925 write(2, "47 packets received by filter", 29) = 29
+76925 write(2, "\n", 1)                 = 1
+76925 write(2, "33 packets dropped by kernel", 28) = 28
+76925 write(2, "\n", 1)                 = 1
+76925 setsockopt(3, SOL_PACKET, PACKET_RX_RING, {tp_block_size=0, tp_block_nr=0, tp_frame_size=0, tp_frame_nr=0}, 16) = -1 EBUSY (Device or resource busy)
+76925 munmap(0x7f654a48e000, 3670016)   = 0
+76925 munmap(0x7f654a80e000, 266240)    = 0
+76925 close(3)                          = 0
+76925 exit_group(0)                     = ?
+76925 +++ exited with 0 +++
