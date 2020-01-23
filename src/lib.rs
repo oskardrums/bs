@@ -2,16 +2,16 @@ use cvt::cvt;
 use libc::{
     c_void, close, fcntl, setsockopt, socket, socklen_t, AF_INET, AF_INET6, AF_PACKET, AF_UNIX,
     ETH_P_ALL, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, IPPROTO_RAW, IPPROTO_SCTP,
-    IPPROTO_TCP, IPPROTO_UDP, IPPROTO_UDPLITE, O_NONBLOCK, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET,
-    SOCK_STREAM, SOL_SOCKET, SO_ATTACH_FILTER,
+    IPPROTO_TCP, IPPROTO_UDP, IPPROTO_UDPLITE, MSG_DONTWAIT, O_NONBLOCK, SOCK_DGRAM, SOCK_RAW,
+    SOCK_SEQPACKET, SOCK_STREAM, SOL_SOCKET, SO_ATTACH_FILTER,
 };
 
-pub mod predicate;
 pub mod filter;
+pub mod predicate;
 
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
-use std::io::ErrorKind::Interrupted;
+use std::io::ErrorKind::{Interrupted, WouldBlock};
 use std::io::Result;
 use std::mem::size_of_val;
 
@@ -85,7 +85,7 @@ impl<S: SocketDesc> Socket<S> {
         unsafe { cvt(fcntl(self.os(), F_GETFD)) }
     }
 
-    pub fn attach_filter(&mut self, prog: cbpf::Prog) -> Result<()> {
+    fn attach_cbpf_filter(&mut self, prog: filter::cbpf::Prog) -> Result<()> {
         match unsafe {
             cvt(setsockopt(
                 self.os(),
@@ -100,22 +100,82 @@ impl<S: SocketDesc> Socket<S> {
         }
     }
 
+    pub fn set_filter(&mut self, filter: filter::Filter) -> Result<()> {
+        self.attach_cbpf_filter(filter::cbpf::drop_all())?;
+        self.drain()?;
+        match filter {
+            filter::Filter::Classic(prog) => {
+                self.attach_cbpf_filter(prog)
+            },
+            filter::Filter::Extended(fd) => {
+                unreachable!()
+            },
+        }
+    }
+
     pub fn recv(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
         unsafe {
-            let n = cvt({
-                libc::recv(
-                    self.os(),
-                    buf.as_mut_ptr() as *mut c_void,
-                    buf.len(),
-                    flags,
-                )
-            })?;
+            let n =
+                cvt({ libc::recv(self.os(), buf.as_mut_ptr() as *mut c_void, buf.len(), flags) })?;
             Ok(n as usize)
         }
     }
 
     pub fn set_nonblocking(&mut self) -> Result<()> {
         self.set_flags(self.flags()? | O_NONBLOCK)
+    }
+
+    pub fn set_blocking(&mut self) -> Result<()> {
+        self.set_flags(self.flags()? & !O_NONBLOCK)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn drain(&mut self) -> Result<()> {
+        let mut buf = [0; 4096];
+        loop {
+            match self.recv(&mut buf, MSG_DONTWAIT) {
+                Err(e) => {
+                    if e.kind() == WouldBlock {
+                        return Ok(());
+                    } else {
+                        return Err(e);
+                    }
+                }
+                Ok(_) => {
+                    continue;
+                }
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    fn drain(&mut self) -> Result<()> {
+        let mut buf = [0; 4096];
+        let original_flags = self.flags()?;
+        let revert = false;
+        if !(original_flags & O_NONBLOCK) {
+            let revert = true;
+        }
+        self.set_flags(original_flags | O_NONBLOCK);
+        let res = loop {
+            match self.recv(&mut buf, 0) {
+                Err(e) => {
+                    if e.kind() == WouldBlock {
+                        Ok(())
+                    } else {
+                        Err(e)
+                    }
+                }
+                Ok(_) => {
+                    continue;
+                }
+            }
+        };
+
+        if revert {
+            self.set_flags(original_flags);
+        }
+        res
     }
 
     pub fn set_cloexe(&mut self) -> Result<()> {
@@ -268,7 +328,7 @@ impl SocketDesc for TcpSocket {
     }
 }
 
-mod cbpf {
+mod ccbpf {
     pub use boolean_expression::*;
     use bpf;
     pub use std::mem::{forget, size_of_val};
@@ -475,26 +535,18 @@ mod cbpf {
 
 #[cfg(test)]
 mod tests {
-    use super::cbpf::*;
+    use super::filter::cbpf::*;
+    use super::filter::Filter::*;
     use super::*;
-    #[test]
-    fn doit() {
-        let compiler = Compiler::default();
-        compiler.compile(Expr::And(
-            Box::new(Expr::Terminal(ether_type(0x0800))),
-            Box::new(Expr::Terminal(ether_type(0x0806))),
-        ));
-        compiler.compile(Expr::Or(
-            Box::new(Expr::Terminal(ether_type(0x0800))),
-            Box::new(Expr::Terminal(ether_type(0x0806))),
-        ));
-    }
 
     #[test]
-    fn attach_filter() {
+    fn set_classic_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
-        let mut buf = [0; 10];
-        s.attach_filter(Compiler::default().compile(cbpf::ip_dst("1.1.1.1".parse().unwrap())));
+        let mut buf = [0; 1024];
+        s.set_filter(Classic(ip_dst("1.1.1.1".parse().unwrap()).compile(0, 0, ReturnStrategy::Truncate(4096))));
+        loop {
+            s.recv(&mut buf, 0);
+        }
     }
 
     #[test]
