@@ -6,6 +6,9 @@ use libc::{
     SOCK_STREAM, SOL_SOCKET, SO_ATTACH_FILTER,
 };
 
+pub mod predicate;
+pub mod filter;
+
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 use std::io::ErrorKind::Interrupted;
@@ -492,9 +495,6 @@ mod tests {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         let mut buf = [0; 10];
         s.attach_filter(Compiler::default().compile(cbpf::ip_dst("1.1.1.1".parse().unwrap())));
-        loop {
-            s.recv(&mut buf, 0).unwrap();
-        }
     }
 
     #[test]
