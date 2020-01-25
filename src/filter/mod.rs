@@ -1,4 +1,5 @@
 pub mod cbpf;
+mod predicate;
 
 pub enum Filter {
     Classic(cbpf::Prog),

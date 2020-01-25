@@ -1,5 +1,5 @@
 use crate::socket::socket::SocketDesc;
-use libc::{AF_INET, SOCK_RAW, IPPROTO_RAW};
+use libc::{AF_INET, IPPROTO_RAW, SOCK_RAW};
 
 pub struct RawSocket {
     fd: i32,

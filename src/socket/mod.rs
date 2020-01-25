@@ -1,27 +1,27 @@
-pub mod socket;
 pub mod packet;
 pub mod raw;
-pub mod udp;
+pub mod socket;
 pub mod tcp;
+pub mod udp;
 
 pub const PROTO_NULL: i32 = 0;
 
 #[cfg(test)]
 mod tests {
-    use crate::filter::cbpf::*;
-    use crate::filter::Filter::*;
-    use super::socket::*;
     use super::packet::*;
     use super::raw::*;
-    use super::udp::*;
+    use super::socket::*;
     use super::tcp::*;
+    use super::udp::*;
+    use crate::filter::cbpf::*;
+    use crate::filter::Filter::*;
     use libc::SOCK_NONBLOCK;
 
     #[test]
     fn set_classic_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         let mut buf = [0; 1024];
-        s.set_filter(Classic(ip_host("1.1.1.1".parse().unwrap()).compile(0, 0, ReturnStrategy::Truncate(4096))));
+        s.set_filter(Classic(ip_host("1.1.1.1".parse().unwrap()).compile()));
         s.recv(&mut buf, 0);
     }
 

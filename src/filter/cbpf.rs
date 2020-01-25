@@ -202,12 +202,19 @@ impl ReturnStrategy {
     }
 }
 
-pub trait Compile {
-    fn compile(self, ll_offset: i32, nl_offset: i32, return_strategy: ReturnStrategy) -> Prog;
+pub trait Compile
+where
+    Self: Sized,
+{
+    fn compile_with_return_strategy(self, return_strategy: ReturnStrategy) -> Prog;
+
+    fn compile(self) -> Prog {
+        self.compile_with_return_strategy(ReturnStrategy::Truncate(u16::max_value() as u32))
+    }
 }
 
-use crate::predicate::Predicate;
-use crate::predicate::{And, Const, Not, Or, Terminal};
+use crate::filter::predicate::Predicate;
+use crate::filter::predicate::{And, Const, Not, Or, Terminal};
 
 fn walk(predicate: Predicate<Condition>, jt: usize, jf: usize) -> Vec<Op> {
     match predicate.into_inner() {
@@ -235,7 +242,7 @@ fn walk(predicate: Predicate<Condition>, jt: usize, jf: usize) -> Vec<Op> {
 
 impl Compile for Predicate<Condition> {
     // TODO - use the given offsets to adjust computations along compilation
-    fn compile(mut self, ll_offset: i32, nl_offset: i32, return_strategy: ReturnStrategy) -> Prog {
+    fn compile_with_return_strategy(mut self, return_strategy: ReturnStrategy) -> Prog {
         self = Predicate::from(self.into_inner().simplify_via_laws());
         let mut instructions = return_strategy.build();
 
