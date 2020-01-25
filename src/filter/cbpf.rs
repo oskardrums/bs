@@ -1,5 +1,5 @@
 use std;
-use std::mem::forget;
+use std::mem::{forget, size_of, transmute};
 use std::net::Ipv4Addr;
 
 pub const BPF_LD: u16 = 0x00;
@@ -49,12 +49,7 @@ pub struct Op {
 
 impl Op {
     pub fn new(code: u16, jt: u8, jf: u8, k: u32) -> Op {
-        Op {
-            code: code,
-            jt: jt,
-            jf: jf,
-            k: k,
-        }
+        Op { code, jt, jf, k }
     }
 }
 
@@ -90,7 +85,7 @@ impl Drop for Prog {
     }
 }
 
-#[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd, Default)]
 pub struct Computation {
     ops: Vec<Op>,
 }
@@ -107,7 +102,6 @@ impl Computation {
 
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Condition {
-    // last Op must be a jump, we should force it
     computation: Computation,
     return_instruction: u16,
     return_argument: u32,
@@ -136,14 +130,14 @@ impl Condition {
 
     pub fn build(self, jt: usize, jf: usize) -> Vec<Op> {
         let mut res = {
-            if jt < std::u8::MAX as usize && jf < std::u8::MAX as usize {
+            if jt < u8::max_value() as usize && jf < u8::max_value() as usize {
                 vec![Op::new(
                     self.return_instruction(),
                     jt as u8,
                     jf as u8,
                     self.return_argument(),
                 )]
-            } else if jt < std::u8::MAX as usize && jf >= std::u8::MAX as usize {
+            } else if jt < u8::max_value() as usize && jf >= u8::max_value() as usize {
                 vec![
                     Op::new(BPF_JMP | BPF_K, 0, 0, jf as u32),
                     Op::new(
@@ -153,7 +147,7 @@ impl Condition {
                         self.return_argument(),
                     ),
                 ]
-            } else if jt >= std::u8::MAX as usize && jf < std::u8::MAX as usize {
+            } else if jt >= u8::max_value() as usize && jf < u8::max_value() as usize {
                 vec![
                     Op::new(BPF_JMP | BPF_K, 0, 0, jt as u32),
                     Op::new(
@@ -163,7 +157,7 @@ impl Condition {
                         self.return_argument(),
                     ),
                 ]
-            } else if jt >= std::u8::MAX as usize && jf >= std::u8::MAX as usize {
+            } else if jt >= u8::max_value() as usize && jf >= u8::max_value() as usize {
                 vec![
                     Op::new(BPF_JMP | BPF_K, 0, 0, jf as u32),
                     Op::new(BPF_JMP | BPF_K, 0, 0, jt as u32),
@@ -175,14 +169,6 @@ impl Condition {
         };
         res.extend(self.computation.build());
         return res;
-    }
-}
-
-impl IntoIterator for Computation {
-    type Item = Op;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-    fn into_iter(self) -> Self::IntoIter {
-        self.ops.into_iter()
     }
 }
 
@@ -198,7 +184,7 @@ const OP_DROP_PACKET: Op = Op {
     k: 0,
 };
 
-const fn OP_RETURN_K(k: u32) -> Op {
+const fn op_return_k(k: u32) -> Op {
     Op {
         code: BPF_RET | BPF_K,
         jt: 0,
@@ -210,7 +196,7 @@ const fn OP_RETURN_K(k: u32) -> Op {
 impl ReturnStrategy {
     pub fn build(self) -> Vec<Op> {
         match self {
-            Self::Truncate(u) => vec![OP_DROP_PACKET, OP_RETURN_K(u)],
+            Self::Truncate(u) => vec![OP_DROP_PACKET, op_return_k(u)],
             Self::Calculate(computation) => computation.build(),
         }
     }
@@ -228,18 +214,18 @@ fn walk(predicate: Predicate<Condition>, jt: usize, jf: usize) -> Vec<Op> {
         Terminal(condition) => condition.build(jt, jf),
         Not(e) => walk(Predicate::from(*e), jf, jt),
         And(a, b) => {
-            let mut res = walk(Predicate::from(*a), jt, jf);
-            res.extend(walk(Predicate::from(*b), 0, jf + res.len()));
+            let mut res = walk(Predicate::from(*b), jt, jf);
+            res.extend(walk(Predicate::from(*a), 0, jf + res.len()));
             res
         }
         Or(a, b) => {
-            let mut res = walk(Predicate::from(*a), jt, jf);
-            res.extend(walk(Predicate::from(*b), jt + res.len(), 0));
+            let mut res = walk(Predicate::from(*b), jt, jf);
+            res.extend(walk(Predicate::from(*a), jt + res.len(), 0));
             res
         }
         Const(boolean) => {
             if boolean {
-                vec![OP_RETURN_K(std::u32::MAX)]
+                vec![op_return_k(std::u32::MAX)]
             } else {
                 vec![OP_DROP_PACKET]
             }
@@ -249,17 +235,20 @@ fn walk(predicate: Predicate<Condition>, jt: usize, jf: usize) -> Vec<Op> {
 
 impl Compile for Predicate<Condition> {
     // TODO - use the given offsets to adjust computations along compilation
-    fn compile(self, ll_offset: i32, nl_offset: i32, return_strategy: ReturnStrategy) -> Prog {
+    fn compile(mut self, ll_offset: i32, nl_offset: i32, return_strategy: ReturnStrategy) -> Prog {
+        self = Predicate::from(self.into_inner().simplify_via_laws());
         let mut instructions = return_strategy.build();
 
         instructions.extend(walk(self, 0, instructions.len() - 1));
 
         instructions.reverse();
 
+        println!("instructions: {:?}", instructions);
         Prog::new(instructions)
     }
 }
 
+use eui48::MacAddress;
 use libc::ETH_P_IP;
 const OFFSET_ETHER_SRC: u32 = 6;
 const OFFSET_ETHER_DST: u32 = 0;
@@ -267,23 +256,113 @@ const OFFSET_ETHER_TYPE: u32 = 12;
 const OFFSET_IP_SRC: u32 = 26;
 const OFFSET_IP_DST: u32 = 30;
 
+enum Value {
+    Byte(u8),
+    Half(u16),
+    Word(u32),
+    XByte(u8),
+    XHalf(u16),
+    XWord(u32),
+    // TODO - support mem (M[k])
+}
+
+fn offset_equals(offset: u32, value: Value) -> Condition {
+    match value {
+        Value::Byte(b) => Condition::new(
+            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_B, 0, 0, offset)]),
+            BPF_JMP | BPF_JEQ | BPF_K,
+            b as u32,
+        ),
+        Value::Half(h) => Condition::new(
+            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_H, 0, 0, offset)]),
+            BPF_JMP | BPF_JEQ | BPF_K,
+            h as u32,
+        ),
+        Value::Word(i) => Condition::new(
+            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_W, 0, 0, offset)]),
+            BPF_JMP | BPF_JEQ | BPF_K,
+            i,
+        ),
+        Value::XByte(b) => Condition::new(
+            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_B, 0, 0, offset)]),
+            BPF_JMP | BPF_JEQ | BPF_X,
+            b as u32,
+        ),
+        Value::XHalf(h) => Condition::new(
+            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_H, 0, 0, offset)]),
+            BPF_JMP | BPF_JEQ | BPF_X,
+            h as u32,
+        ),
+        Value::XWord(i) => Condition::new(
+            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_W, 0, 0, offset)]),
+            BPF_JMP | BPF_JEQ | BPF_X,
+            i,
+        ),
+    }
+}
+
 pub fn ip_dst(ip: Ipv4Addr) -> Predicate<Condition> {
     Predicate::from(And(
         Box::new(Terminal(ether_type(ETH_P_IP as u16))),
-        Box::new(Terminal(Condition::new(
-            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_W, 0, 0, OFFSET_IP_DST)]),
-            BPF_JMP | BPF_JEQ,
-            ip.into(),
+        Box::new(Terminal(offset_equals(
+            OFFSET_IP_DST,
+            Value::Word(ip.into()),
         ))),
     ))
 }
 
+pub fn ip_src(ip: Ipv4Addr) -> Predicate<Condition> {
+    Predicate::from(And(
+        Box::new(Terminal(ether_type(ETH_P_IP as u16))),
+        Box::new(Terminal(offset_equals(
+            OFFSET_IP_SRC,
+            Value::Word(ip.into()),
+        ))),
+    ))
+}
+
+pub fn ip_host(ip: Ipv4Addr) -> Predicate<Condition> {
+    ip_src(ip) | ip_dst(ip)
+}
+
+fn mac_to_u32_and_u16(mac: MacAddress) -> (u32, u16) {
+    let bytes = mac.to_array();
+    unsafe {
+        (
+            transmute::<[u8; 4], u32>([bytes[0], bytes[1], bytes[2], bytes[3]]),
+            transmute::<[u8; 2], u16>([bytes[4], bytes[5]]),
+        )
+    }
+}
+
+pub fn ether_dst(mac: MacAddress) -> Predicate<Condition> {
+    let (i, h) = mac_to_u32_and_u16(mac);
+    Predicate::from(And(
+        Box::new(Terminal(offset_equals(OFFSET_ETHER_DST, Value::Word(i)))),
+        Box::new(Terminal(offset_equals(
+            OFFSET_ETHER_DST + size_of::<u32>() as u32,
+            Value::Word(h as u32),
+        ))),
+    ))
+}
+
+pub fn ether_src(mac: MacAddress) -> Predicate<Condition> {
+    let (i, h) = mac_to_u32_and_u16(mac);
+    Predicate::from(And(
+        Box::new(Terminal(offset_equals(OFFSET_ETHER_SRC, Value::Word(i)))),
+        Box::new(Terminal(offset_equals(
+            OFFSET_ETHER_SRC + size_of::<u32>() as u32,
+            Value::Word(h as u32),
+        ))),
+    ))
+}
+
+pub fn ether_host(mac: MacAddress) -> Predicate<Condition> {
+    ether_src(mac) | ether_dst(mac)
+}
+
 pub fn ether_type(ether_type: u16) -> Condition {
-    Condition::new(
-        Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_H, 0, 0, OFFSET_ETHER_TYPE)]),
-        BPF_JMP | BPF_JEQ,
-        ether_type as u32,
-    )
+    offset_equals(OFFSET_ETHER_TYPE, Value::Half(ether_type))
 }
 
 pub fn drop_all() -> Prog {

@@ -21,7 +21,7 @@ mod tests {
     fn set_classic_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         let mut buf = [0; 1024];
-        s.set_filter(Classic(ip_dst("1.1.1.1".parse().unwrap()).compile(0, 0, ReturnStrategy::Truncate(4096))));
+        s.set_filter(Classic(ip_host("1.1.1.1".parse().unwrap()).compile(0, 0, ReturnStrategy::Truncate(4096))));
         s.recv(&mut buf, 0);
     }
 

@@ -1,9 +1,7 @@
 use cvt::cvt;
 use libc::{
-    c_void, close, fcntl, setsockopt, socket, socklen_t, AF_INET, AF_INET6, AF_PACKET, AF_UNIX,
-    ETH_P_ALL, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, IPPROTO_RAW, IPPROTO_SCTP,
-    IPPROTO_TCP, IPPROTO_UDP, IPPROTO_UDPLITE, MSG_DONTWAIT, O_NONBLOCK, SOCK_DGRAM, SOCK_RAW,
-    SOCK_SEQPACKET, SOCK_STREAM, SOL_SOCKET, SO_ATTACH_FILTER,
+    c_void, close, fcntl, setsockopt, socket, socklen_t, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD,
+    F_SETFL, MSG_DONTWAIT, O_NONBLOCK, SOL_SOCKET, SO_ATTACH_FILTER,
 };
 
 use crate::filter;
@@ -111,12 +109,8 @@ impl<S: SocketDesc> Socket<S> {
         self.attach_cbpf_filter(filter::cbpf::drop_all())?;
         self.drain()?;
         match filter {
-            filter::Filter::Classic(prog) => {
-                self.attach_cbpf_filter(prog)
-            },
-            filter::Filter::Extended(fd) => {
-                unreachable!()
-            },
+            filter::Filter::Classic(prog) => self.attach_cbpf_filter(prog),
+            filter::Filter::Extended(fd) => unreachable!(),
         }
     }
 
