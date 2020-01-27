@@ -1,4 +1,4 @@
-use crate::socket::socket::SocketDesc;
+use crate::socket::SocketDesc;
 use libc::{AF_PACKET, ETH_P_ALL, SOCK_DGRAM, SOCK_RAW};
 
 pub struct PacketLayer2Socket {

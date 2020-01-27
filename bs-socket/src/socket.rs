@@ -4,7 +4,8 @@ use libc::{
     F_SETFL, MSG_DONTWAIT, O_NONBLOCK, SOL_SOCKET, SO_ATTACH_FILTER,
 };
 
-use crate::filter;
+use bs_filter as filter;
+use bs_filter::cbpf::Compile;
 
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
@@ -12,6 +13,7 @@ use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 use std::io::ErrorKind::{Interrupted, WouldBlock};
 use std::io::Result;
 use std::mem::size_of_val;
+use std::iter::FromIterator;
 
 pub const PROTO_NULL: i32 = 0_i32;
 pub const IPPROTO_L2TP: i32 = 115_i32;
@@ -89,29 +91,35 @@ impl<S: SocketDesc> Socket<S> {
         unsafe { cvt(fcntl(self.os(), F_GETFD)) }
     }
 
-    fn attach_cbpf_filter(&mut self, prog: filter::cbpf::Prog) -> Result<()> {
-        match unsafe {
-            cvt(setsockopt(
-                self.os(),
-                SOL_SOCKET,
-                SO_ATTACH_FILTER,
-                &prog as *const _ as *const c_void,
-                size_of_val(&prog) as socklen_t,
-            ))
-        } {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
+    fn attach_filter(&mut self, filter: filter::Filter) -> Result<()> {
+        match filter {
+            filter::Filter::Classic(f) => {
+                let prog = filter::cbpf::Program::from_iter(f.into_iter());
+                match unsafe {
+                    cvt(setsockopt(
+                        self.os(),
+                        SOL_SOCKET,
+                        SO_ATTACH_FILTER,
+                        &prog as *const _ as *const c_void,
+                        size_of_val(&prog) as socklen_t,
+                    ))
+                } {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(e),
+                }
+            },
+            filter::Filter::Extended(e) => {
+                unreachable!();
+            },
         }
-    }
 
+    }
     // TODO - feature filter
     pub fn set_filter(&mut self, filter: filter::Filter) -> Result<()> {
-        self.attach_cbpf_filter(filter::cbpf::drop_all())?;
+        self.attach_filter(filter::Filter::Classic(filter::cbpf::Filter::drop_all()))?;
         self.drain()?;
-        match filter {
-            filter::Filter::Classic(prog) => self.attach_cbpf_filter(prog),
-            filter::Filter::Extended(fd) => unreachable!(),
-        }
+        self.attach_filter(filter)?;
+        Ok(())
     }
 
     // TODO - make recv more fun

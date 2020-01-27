@@ -1,4 +1,4 @@
-use crate::socket::socket::SocketDesc;
+use crate::socket::SocketDesc;
 use libc::{AF_INET, IPPROTO_RAW, SOCK_RAW};
 
 pub struct RawSocket {

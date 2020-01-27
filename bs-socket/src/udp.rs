@@ -1,4 +1,4 @@
-use crate::socket::socket::SocketDesc;
+use crate::socket::SocketDesc;
 use crate::socket::PROTO_NULL;
 use libc::{AF_INET, SOCK_DGRAM};
 

@@ -1,5 +1,5 @@
 [package]
-name = "bs"
+name = "bs-filter"
 version = "0.1.0"
 authors = ["Oskar Matzerath <moskar.drummer@gmail.com>"]
 edition = "2018"
@@ -7,9 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libc = "0.2"
-cvt  = "0.1"
-bpf  = "0.1"
-bpf-sys = "0.9"
+bpf-sys             = "0.9"
 boolean_expression  = "0.3"
-eui48  = "0.4"
+eui48               = "0.4"
+libc                = "*" # TODO - select version

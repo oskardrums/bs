@@ -1,12 +1,12 @@
-use crate::socket::socket::SocketDesc;
+use crate::socket::SocketDesc;
 use crate::socket::PROTO_NULL;
-use libc::{AF_INET, SOCK_STREAM};
+use libc::{AF_INET, SOCK_SCTP};
 
-pub struct TcpSocket {
+pub struct UdpSocket {
     fd: i32,
 }
 
-impl SocketDesc for TcpSocket {
+impl SocketDesc for SctpSocket {
     fn new(fd: i32) -> Self {
         Self { fd }
     }
@@ -14,7 +14,7 @@ impl SocketDesc for TcpSocket {
         AF_INET as i32
     }
     fn type_() -> i32 {
-        SOCK_STREAM as i32
+        SOCK_SCTP as i32
     }
     fn protocol() -> i32 {
         PROTO_NULL

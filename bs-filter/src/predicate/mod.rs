@@ -1,4 +1,3 @@
-
 pub use boolean_expression::Expr;
 pub use boolean_expression::Expr::*;
 use std::fmt::Debug;
@@ -57,23 +56,22 @@ where
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
-    use crate::filter::cbpf::Condition;
-
     #[test]
     fn simple_and() {
         assert_eq!(
-            Predicate::<Condition>::from(Const(true)) & Predicate::from(Const(false)),
-            Predicate::<Condition>::from(And(Box::new(Const(true)), Box::new(Const(false))))
+            Predicate::<bool>::from(Const(true)) & Predicate::from(Const(false)),
+            Predicate::<bool>::from(And(Box::new(Const(true)), Box::new(Const(false))))
         );
     }
 
     #[test]
     fn simple_or() {
         assert_eq!(
-            Predicate::<Condition>::from(Const(true)) | Predicate::from(Const(false)),
-            Predicate::<Condition>::from(Or(Box::new(Const(true)), Box::new(Const(false))))
+            Predicate::<bool>::from(Const(true)) | Predicate::from(Const(false)),
+            Predicate::<bool>::from(Or(Box::new(Const(true)), Box::new(Const(false))))
         );
     }
 }

@@ -1,5 +1,14 @@
-pub use eui48::MacAddress;
-pub use libc::ETH_P_IP;
+use eui48::MacAddress;
+use std::net::Ipv4Addr;
+use std::mem::{transmute, size_of};
+use libc::ETH_P_IP;
+use bpf_sys::*;
+use crate::cbpf::computation::Computation;
+use crate::cbpf::condition::Condition;
+use crate::cbpf::operation::{Operation, ImmArg};
+use crate::predicate::Predicate;
+use boolean_expression::Expr::*;
+
 const OFFSET_ETHER_SRC: u32 = 6;
 const OFFSET_ETHER_DST: u32 = 0;
 const OFFSET_ETHER_TYPE: u32 = 12;
@@ -10,43 +19,30 @@ pub enum Value {
     Byte(u8),
     Half(u16),
     Word(u32),
-    XByte(u8),
-    XHalf(u16),
-    XWord(u32),
-    // TODO - support mem (M[k])
+    X,
 }
 
-pub fn offset_equals(offset: u32, value: Value) -> Condition {
+pub fn offset_equals(offset: ImmArg, value: Value) -> Condition {
     match value {
         Value::Byte(b) => Condition::new(
-            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_B, 0, 0, offset)]),
-            BPF_JMP | BPF_JEQ | BPF_K,
+            Computation::new(vec![Operation::new((BPF_ABS | BPF_LD | BPF_B) as _, 0, 0, offset)]),
+            (BPF_JMP | BPF_JEQ | BPF_K) as _,
             b as u32,
         ),
         Value::Half(h) => Condition::new(
-            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_H, 0, 0, offset)]),
-            BPF_JMP | BPF_JEQ | BPF_K,
+            Computation::new(vec![Operation::new((BPF_ABS | BPF_LD | BPF_H) as _, 0, 0, offset)]),
+            (BPF_JMP | BPF_JEQ | BPF_K) as _,
             h as u32,
         ),
         Value::Word(i) => Condition::new(
-            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_W, 0, 0, offset)]),
-            BPF_JMP | BPF_JEQ | BPF_K,
+            Computation::new(vec![Operation::new((BPF_ABS | BPF_LD | BPF_W) as _, 0, 0, offset)]),
+            (BPF_JMP | BPF_JEQ | BPF_K) as _,
             i,
         ),
-        Value::XByte(b) => Condition::new(
-            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_B, 0, 0, offset)]),
-            BPF_JMP | BPF_JEQ | BPF_X,
-            b as u32,
-        ),
-        Value::XHalf(h) => Condition::new(
-            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_H, 0, 0, offset)]),
-            BPF_JMP | BPF_JEQ | BPF_X,
-            h as u32,
-        ),
-        Value::XWord(i) => Condition::new(
-            Computation::new(vec![Op::new(BPF_ABS | BPF_LD | BPF_W, 0, 0, offset)]),
-            BPF_JMP | BPF_JEQ | BPF_X,
-            i,
+        Value::X => Condition::new(
+            Computation::default(),
+            (BPF_JMP | BPF_JEQ | BPF_K) as _,
+            0,
         ),
     }
 }
@@ -113,8 +109,4 @@ pub fn ether_host(mac: MacAddress) -> Predicate<Condition> {
 
 pub fn ether_type(ether_type: u16) -> Condition {
     offset_equals(OFFSET_ETHER_TYPE, Value::Half(ether_type))
-}
-
-pub fn drop_all() -> Prog {
-    Prog::new(vec![OP_DROP_PACKET])
 }

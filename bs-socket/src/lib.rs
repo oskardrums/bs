@@ -13,15 +13,15 @@ mod tests {
     use super::socket::*;
     use super::tcp::*;
     use super::udp::*;
-    use crate::filter::cbpf::*;
-    use crate::filter::Filter::*;
+    use bs_filter::cbpf::*;
+    use bs_filter::Filter::*;
     use libc::SOCK_NONBLOCK;
 
     #[test]
     fn set_classic_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         let mut buf = [0; 1024];
-        s.set_filter(Classic(ip_host("1.1.1.1".parse().unwrap()).compile()));
+        s.set_filter(Classic(ip_host("1.1.1.1".parse().unwrap()).compile())).unwrap();
         s.recv(&mut buf, 0);
     }
 

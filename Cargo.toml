@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "bs-filter", 
+    "bs-socket",
+    "bs-examples",
+]
