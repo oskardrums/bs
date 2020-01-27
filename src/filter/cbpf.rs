@@ -1,6 +1,6 @@
-use std;
 use std::mem::{forget, size_of, transmute};
 use std::net::Ipv4Addr;
+use bpf_sys::*;
 
 pub const BPF_LD: u16 = 0x00;
 pub const BPF_LDX: u16 = 0x01;
