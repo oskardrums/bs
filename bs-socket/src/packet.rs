@@ -1,12 +1,13 @@
 use crate::socket::SocketDesc;
 use libc::{AF_PACKET, ETH_P_ALL, SOCK_DGRAM, SOCK_RAW};
+use std::os::unix::io::RawFd;
 
 pub struct PacketLayer2Socket {
-    fd: i32,
+    fd: RawFd,
 }
 
 impl SocketDesc for PacketLayer2Socket {
-    fn new(fd: i32) -> Self {
+    fn new(fd: RawFd) -> Self {
         Self { fd }
     }
     fn domain() -> i32 {
@@ -24,11 +25,11 @@ impl SocketDesc for PacketLayer2Socket {
 }
 
 pub struct PacketLayer3Socket {
-    fd: i32,
+    fd: RawFd,
 }
 
 impl SocketDesc for PacketLayer3Socket {
-    fn new(fd: i32) -> Self {
+    fn new(fd: RawFd) -> Self {
         Self { fd }
     }
     fn domain() -> i32 {

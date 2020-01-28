@@ -1,12 +1,13 @@
 use crate::socket::SocketDesc;
 use libc::{AF_INET, IPPROTO_RAW, SOCK_RAW};
+use std::os::unix::io::RawFd;
 
 pub struct RawSocket {
-    fd: i32,
+    fd: RawFd,
 }
 
 impl SocketDesc for RawSocket {
-    fn new(fd: i32) -> Self {
+    fn new(fd: RawFd) -> Self {
         Self { fd }
     }
     fn domain() -> i32 {

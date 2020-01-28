@@ -1,13 +1,14 @@
 use crate::socket::SocketDesc;
 use crate::socket::PROTO_NULL;
 use libc::{AF_INET, SOCK_DGRAM};
+use std::os::unix::io::RawFd;
 
 pub struct UdpSocket {
-    fd: i32,
+    fd: RawFd,
 }
 
 impl SocketDesc for UdpSocket {
-    fn new(fd: i32) -> Self {
+    fn new(fd: RawFd) -> Self {
         Self { fd }
     }
     fn domain() -> i32 {

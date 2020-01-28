@@ -5,21 +5,21 @@ use libc::{
 };
 
 use bs_filter as filter;
-use bs_filter::cbpf::Compile;
 
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 
 use std::io::ErrorKind::{Interrupted, WouldBlock};
 use std::io::Result;
-use std::mem::{size_of, size_of_val};
+use std::mem::size_of_val;
+use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
 pub const PROTO_NULL: i32 = 0_i32;
 pub const IPPROTO_L2TP: i32 = 115_i32;
 pub const DRAIN_BUFFER_SIZE: usize = 4096;
 
 pub trait SocketDesc {
-    fn new(fd: i32) -> Self;
+    fn new(fd: RawFd) -> Self;
     fn os(&self) -> i32;
     fn domain() -> i32;
     fn type_() -> i32;
@@ -32,6 +32,10 @@ pub struct Socket<S: SocketDesc> {
 }
 
 impl<S: SocketDesc> Socket<S> {
+    pub(crate) fn os(&self) -> i32 {
+        self.inner.os()
+    }
+
     #[cfg(target_os = "linux")]
     pub fn new() -> Result<Self> {
         Self::with_flags(SOCK_CLOEXEC)
@@ -59,13 +63,7 @@ impl<S: SocketDesc> Socket<S> {
 
     #[cfg(not(target_os = "linux"))]
     pub fn nonblocking() -> Result<Self> {
-        let mut s = Self::new()?;
-        s.set_nonblocking()?;
-        s
-    }
-
-    pub fn os(&self) -> i32 {
-        self.inner.os()
+        Self::new().and_then(|s| s.set_nonblocking().map_ok(|| s))
     }
 
     #[cfg(target_os = "linux")]
@@ -93,28 +91,24 @@ impl<S: SocketDesc> Socket<S> {
     fn attach_filter(&mut self, filter: filter::Filter) -> Result<()> {
         match filter {
             filter::Filter::Classic(f) => {
-//                let prog = filter::cbpf::Program::from_iter(f.into_iter());
                 let prog: filter::cbpf::Program = f.into();
- //               let optlen = size_of_val(&prog.len()) as usize + (prog.len() * 8) as usize;
                 match unsafe {
                     cvt(setsockopt(
                         self.os(),
                         SOL_SOCKET,
                         SO_ATTACH_FILTER,
                         &prog as *const _ as *const c_void,
-//                        optlen as _,
                         size_of_val(&prog) as socklen_t,
                     ))
                 } {
                     Ok(_) => Ok(()),
                     Err(e) => Err(e),
                 }
-            },
+            }
             filter::Filter::Extended(e) => {
                 unreachable!();
-            },
+            }
         }
-
     }
     // TODO - feature filter
     pub fn set_filter(&mut self, filter: filter::Filter) -> Result<()> {
@@ -227,5 +221,23 @@ impl<S: SocketDesc> Drop for Socket<S> {
                 }
             }
         }
+    }
+}
+
+impl<S: SocketDesc> AsRawFd for Socket<S> {
+    fn as_raw_fd(&self) -> RawFd {
+        self.os()
+    }
+}
+
+impl<S: SocketDesc> IntoRawFd for Socket<S> {
+    fn into_raw_fd(self) -> RawFd {
+        self.os()
+    }
+}
+
+impl<S: SocketDesc> FromRawFd for Socket<S> {
+    unsafe fn from_raw_fd(fd: RawFd) -> Self {
+        Self { inner: S::new(fd) }
     }
 }
