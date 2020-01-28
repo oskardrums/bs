@@ -21,11 +21,14 @@ mod tests {
     fn set_classic_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         let mut buf = [0; 1024];
-        s.set_filter(Classic(ip_host("1.1.1.1".parse().unwrap()).compile())).unwrap();
+        let ip = "1.1.1.1".parse().unwrap();
+        let p = ip_host(ip);
+        let f = p.compile();
+        s.set_filter(Classic(f)).unwrap();
         s.recv(&mut buf, 0);
     }
-
     #[test]
+
     fn packet_layer2_socket_flags() {
         let mut s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
         s.set_nonblocking().unwrap();
@@ -83,7 +86,6 @@ mod tests {
         let s: Socket<PacketLayer2Socket> = Socket::plain_nonblocking().unwrap();
         assert!(s.os() >= 0);
     }
-
     #[test]
     fn raw_socket_new() {
         let s: Socket<RawSocket> = Socket::new().unwrap();

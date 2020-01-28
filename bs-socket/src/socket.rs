@@ -12,8 +12,7 @@ use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 
 use std::io::ErrorKind::{Interrupted, WouldBlock};
 use std::io::Result;
-use std::mem::size_of_val;
-use std::iter::FromIterator;
+use std::mem::{size_of, size_of_val};
 
 pub const PROTO_NULL: i32 = 0_i32;
 pub const IPPROTO_L2TP: i32 = 115_i32;
@@ -94,13 +93,16 @@ impl<S: SocketDesc> Socket<S> {
     fn attach_filter(&mut self, filter: filter::Filter) -> Result<()> {
         match filter {
             filter::Filter::Classic(f) => {
-                let prog = filter::cbpf::Program::from_iter(f.into_iter());
+//                let prog = filter::cbpf::Program::from_iter(f.into_iter());
+                let prog: filter::cbpf::Program = f.into();
+ //               let optlen = size_of_val(&prog.len()) as usize + (prog.len() * 8) as usize;
                 match unsafe {
                     cvt(setsockopt(
                         self.os(),
                         SOL_SOCKET,
                         SO_ATTACH_FILTER,
                         &prog as *const _ as *const c_void,
+//                        optlen as _,
                         size_of_val(&prog) as socklen_t,
                     ))
                 } {
@@ -118,8 +120,7 @@ impl<S: SocketDesc> Socket<S> {
     pub fn set_filter(&mut self, filter: filter::Filter) -> Result<()> {
         self.attach_filter(filter::Filter::Classic(filter::cbpf::Filter::drop_all()))?;
         self.drain()?;
-        self.attach_filter(filter)?;
-        Ok(())
+        self.attach_filter(filter)
     }
 
     // TODO - make recv more fun

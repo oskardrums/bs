@@ -42,3 +42,9 @@ impl IntoIterator for Filter {
         self.inner.into_iter()
     }
 }
+
+impl Into<Program> for Filter {
+    fn into(self) -> Program {
+        Program::new(self.into_inner())
+    }
+}
