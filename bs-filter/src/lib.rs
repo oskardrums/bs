@@ -10,6 +10,6 @@ pub mod ebpf;
 
 pub enum Filter {
     Classic(cbpf::Filter),
-    Extended(i32),
+    Extended(ebpf::Filter),
 }
 

@@ -106,7 +106,8 @@ impl<S: SocketDesc> Socket<S> {
                 }
             }
             filter::Filter::Extended(e) => {
-                unreachable!();
+                let prog: filter::ebpf::Program = e.into();
+                prog.attach(self.as_raw_fd())
             }
         }
     }

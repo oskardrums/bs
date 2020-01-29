@@ -43,7 +43,6 @@ fn walk(predicate: Predicate<Condition>, jt: usize, jf: usize) -> Vec<Operation>
 }
 
 impl Compile for Predicate<Condition> {
-    // TODO - use the given offsets to adjust computations along compilation
     fn compile_with_return_strategy(mut self, return_strategy: ReturnStrategy) -> Filter {
         self = Predicate::from(self.into_inner().simplify_via_laws());
         let mut instructions = return_strategy.build();

@@ -1,16 +1,12 @@
-pub(crate) mod operation;
-pub(crate) mod computation;
-pub(crate) mod jump_strategy;
-pub(crate) mod condition;
-/*
-pub(crate) mod program;
-pub(crate) mod return_strategy;
 pub(crate) mod compile;
+pub(crate) mod computation;
+pub(crate) mod condition;
+pub(crate) mod jump_strategy;
+pub(crate) mod operation;
+pub(crate) mod program;
 
 pub use compile::Compile;
-pub use return_strategy::ReturnStrategy;
-pub use ready_made::*;
-pub use operation::{Operation, DROP};
+pub use operation::Operation;
 pub use program::Program;
 use std::iter::FromIterator;
 
@@ -19,16 +15,13 @@ pub struct Filter {
 }
 
 impl Filter {
-    pub fn drop_all() -> Self {
-        Self { inner: vec![DROP] }
-    }
     pub fn into_inner(self) -> Vec<Operation> {
         self.inner
     }
 }
 
 impl FromIterator<Operation> for Filter {
-    fn from_iter<I: IntoIterator<Item=Operation>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = Operation>>(iter: I) -> Self {
         Self {
             inner: Vec::from_iter(iter),
         }
@@ -49,4 +42,20 @@ impl Into<Program> for Filter {
         Program::new(self.into_inner())
     }
 }
-*/
+
+use crate::predicate::Predicate;
+use crate::ready_made;
+use condition::Condition;
+use std::net::Ipv4Addr;
+
+pub fn ip_dst(ip: Ipv4Addr) -> Predicate<Condition> {
+    ready_made::ip_dst::<Condition>(ip)
+}
+
+pub fn ip_src(ip: Ipv4Addr) -> Predicate<Condition> {
+    ready_made::ip_src::<Condition>(ip)
+}
+
+pub fn ip_host(ip: Ipv4Addr) -> Predicate<Condition> {
+    ready_made::ip_host::<Condition>(ip)
+}
