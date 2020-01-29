@@ -11,7 +11,7 @@ pub enum JumpStrategy {
 
 impl JumpStrategy {
     pub fn build(self, offset: JumpOffset) -> Vec<Operation> {
-        let op = Operation::new();
+        let mut op = Operation::new();
         match self {
             Self::Regs(c, d, s) => {
                 op.set_code((BPF_JMP as u8 | c | BPF_X as u8) as _);

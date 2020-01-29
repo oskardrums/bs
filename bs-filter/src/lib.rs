@@ -4,7 +4,7 @@ mod tests;
 pub(crate) mod predicate;
 pub(crate) mod util;
 pub(crate) mod condition_builder;
-pub mod ready_made;
+pub(crate) mod ready_made;
 pub mod cbpf;
 pub mod ebpf;
 

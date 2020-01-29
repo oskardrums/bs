@@ -2,7 +2,6 @@ pub(crate) mod operation;
 pub(crate) mod computation;
 pub(crate) mod jump_strategy;
 pub(crate) mod condition;
-pub(crate) mod ready_made;
 /*
 pub(crate) mod program;
 pub(crate) mod return_strategy;

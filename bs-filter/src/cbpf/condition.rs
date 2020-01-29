@@ -79,51 +79,65 @@ impl Condition {
     }
 }
 
-pub enum Value {
-    Byte(u8),
-    Half(u16),
-    Word(u32),
-    X,
-}
-
 impl ConditionBuilder for Condition {
     type Offset = ImmArg;
-    type Value = Value;
     type Condition = Self;
 
-    fn offset_equals(offset: Self::Offset, value: Self::Value) -> Self::Condition {
-        match value {
-            Value::Byte(b) => Condition::new(
-                Computation::new(vec![Operation::new(
-                    (BPF_ABS | BPF_LD | BPF_B) as _,
+    fn offset_equals_u8(offset: Self::Offset, value: u8) -> Self::Condition {
+        Condition::new(
+            Computation::new(vec![Operation::new(
+                (BPF_ABS | BPF_LD | BPF_B) as _,
+                0,
+                0,
+                offset,
+            )]),
+            (BPF_JMP | BPF_JEQ | BPF_K) as _,
+            value as _,
+        )
+    }
+
+    fn offset_equals_u16(offset: Self::Offset, value: u16) -> Self::Condition {
+        Condition::new(
+            Computation::new(vec![Operation::new(
+                (BPF_ABS | BPF_LD | BPF_H) as _,
+                0,
+                0,
+                offset,
+            )]),
+            (BPF_JMP | BPF_JEQ | BPF_K) as _,
+            value as _,
+        )
+    }
+
+    fn offset_equals_u32(offset: Self::Offset, value: u32) -> Self::Condition {
+        Condition::new(
+            Computation::new(vec![Operation::new(
+                (BPF_ABS | BPF_LD | BPF_W) as _,
+                0,
+                0,
+                offset,
+            )]),
+            (BPF_JMP | BPF_JEQ | BPF_K) as _,
+            value as _,
+        )
+    }
+
+    fn offset_equals_u64(offset: Self::Offset, value: u64) -> Self::Condition {
+        Condition::new(
+            Computation::new(vec![
+                Operation::new((BPF_ABS | BPF_LD | BPF_W) as _, 0, 0, offset),
+                Operation::new((BPF_JMP | BPF_JEQ | BPF_K) as _, 0, 3, (value >> 32) as _),
+                Operation::new((BPF_ABS | BPF_LD | BPF_W) as _, 0, 0, offset + 4),
+                Operation::new(
+                    (BPF_JMP | BPF_JEQ | BPF_K) as _,
                     0,
-                    0,
-                    offset,
-                )]),
-                (BPF_JMP | BPF_JEQ | BPF_K) as _,
-                b as u32,
-            ),
-            Value::Half(h) => Condition::new(
-                Computation::new(vec![Operation::new(
-                    (BPF_ABS | BPF_LD | BPF_H) as _,
-                    0,
-                    0,
-                    offset,
-                )]),
-                (BPF_JMP | BPF_JEQ | BPF_K) as _,
-                h as u32,
-            ),
-            Value::Word(i) => Condition::new(
-                Computation::new(vec![Operation::new(
-                    (BPF_ABS | BPF_LD | BPF_W) as _,
-                    0,
-                    0,
-                    offset,
-                )]),
-                (BPF_JMP | BPF_JEQ | BPF_K) as _,
-                i,
-            ),
-            Value::X => Condition::new(Computation::default(), (BPF_JMP | BPF_JEQ | BPF_K) as _, 0),
-        }
+                    1,
+                    ((value << 32) >> 32) as _,
+                ),
+                Operation::new((BPF_LD | BPF_IMM) as _, 0, 0, true as _),
+            ]),
+            (BPF_JMP | BPF_JEQ | BPF_K) as _,
+            true as _,
+        )
     }
 }
