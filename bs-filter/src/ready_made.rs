@@ -1,13 +1,8 @@
-use std::net::Ipv4Addr;
-use libc::ETH_P_IP;
-use bpf_sys::*;
-use crate::cbpf::computation::Computation;
-use crate::cbpf::condition::Condition;
-use crate::cbpf::operation::{Operation, ImmArg};
-use crate::predicate::Predicate;
-use boolean_expression::Expr::*;
+use crate::condition_builder::ConditionBuilder;
 
-pub fn ip_dst(ip: Ipv4Addr) -> Predicate<Condition> {
+use std::net::Ipv4Addr;
+
+pub fn ip_dst<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<Condition> {
     Predicate::from(And(
         Box::new(Terminal(ether_type(ETH_P_IP as u16))),
         Box::new(Terminal(offset_equals(

@@ -20,6 +20,9 @@ impl Operation {
 
 use bpf_sys::*;
 
+// BPF_A is missing from bpf_sys
+const BPF_A: u32 = 0x10;
+
 pub const DROP: Operation = Operation {
     code: (BPF_RET | BPF_K) as _,
     jt: 0,
@@ -28,8 +31,7 @@ pub const DROP: Operation = Operation {
 };
 
 pub const RETURN_A: Operation = Operation {
-    // TODO - undo magic
-    code: 22 as _,
+    code: (BPF_RET | BPF_A) as _,
     jt: 0,
     jf: 0,
     k: 0,

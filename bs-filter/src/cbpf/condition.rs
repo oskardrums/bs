@@ -1,5 +1,6 @@
 use crate::cbpf::computation::Computation;
 use crate::cbpf::operation::{Code, ImmArg, Operation};
+use crate::condition_builder::ConditionBuilder;
 use bpf_sys::*;
 
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
@@ -10,7 +11,11 @@ pub struct Condition {
 }
 
 impl Condition {
-    pub const fn new(computation: Computation, return_instruction: Code, return_argument: ImmArg) -> Self {
+    pub const fn new(
+        computation: Computation,
+        return_instruction: Code,
+        return_argument: ImmArg,
+    ) -> Self {
         Self {
             computation,
             return_instruction,
@@ -71,5 +76,54 @@ impl Condition {
         };
         res.extend(self.computation.build());
         return res;
+    }
+}
+
+pub enum Value {
+    Byte(u8),
+    Half(u16),
+    Word(u32),
+    X,
+}
+
+impl ConditionBuilder for Condition {
+    type Offset = ImmArg;
+    type Value = Value;
+    type Condition = Self;
+
+    fn offset_equals(offset: Self::Offset, value: Self::Value) -> Self::Condition {
+        match value {
+            Value::Byte(b) => Condition::new(
+                Computation::new(vec![Operation::new(
+                    (BPF_ABS | BPF_LD | BPF_B) as _,
+                    0,
+                    0,
+                    offset,
+                )]),
+                (BPF_JMP | BPF_JEQ | BPF_K) as _,
+                b as u32,
+            ),
+            Value::Half(h) => Condition::new(
+                Computation::new(vec![Operation::new(
+                    (BPF_ABS | BPF_LD | BPF_H) as _,
+                    0,
+                    0,
+                    offset,
+                )]),
+                (BPF_JMP | BPF_JEQ | BPF_K) as _,
+                h as u32,
+            ),
+            Value::Word(i) => Condition::new(
+                Computation::new(vec![Operation::new(
+                    (BPF_ABS | BPF_LD | BPF_W) as _,
+                    0,
+                    0,
+                    offset,
+                )]),
+                (BPF_JMP | BPF_JEQ | BPF_K) as _,
+                i,
+            ),
+            Value::X => Condition::new(Computation::default(), (BPF_JMP | BPF_JEQ | BPF_K) as _, 0),
+        }
     }
 }
