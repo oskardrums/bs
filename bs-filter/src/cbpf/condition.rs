@@ -83,6 +83,11 @@ impl ConditionBuilder for Condition {
     type Offset = ImmArg;
     type Condition = Self;
 
+    fn exit() -> Self::Condition {
+        // TODO - implement
+        unreachable!()
+    }
+
     fn offset_equals_u8(offset: Self::Offset, value: u8) -> Self::Condition {
         Condition::new(
             Computation::new(vec![Operation::new(

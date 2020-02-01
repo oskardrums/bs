@@ -7,13 +7,17 @@ use boolean_expression::Expr::*;
 use std::net::Ipv4Addr;
 use libc::ETH_P_IP;
 
+pub fn drop_all<B: ConditionBuilder>() -> Predicate<B::Condition> {
+    Predicate::from(Terminal(B::exit()))
+}
+
 pub fn ether_type<B: ConditionBuilder>(ether_type: u16) -> B::Condition {
     B::offset_equals_u16(OFFSET_ETHER_TYPE.into(), ether_type)
 }
 
 pub fn ip_dst<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
     Predicate::from(And(
-        Box::new(Terminal(ether_type::<B>(ETH_P_IP as _))),
+        Box::new(Terminal(ether_type::<B>(ETH_P_IP as u16))),
         Box::new(Terminal(B::offset_equals_u32(
             OFFSET_IP_DST.into(),
             ip.into(),
@@ -23,7 +27,7 @@ pub fn ip_dst<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
 
 pub fn ip_src<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
     Predicate::from(And(
-        Box::new(Terminal(ether_type::<B>(ETH_P_IP as _))),
+        Box::new(Terminal(ether_type::<B>(ETH_P_IP as u16))),
         Box::new(Terminal(B::offset_equals_u32(
             OFFSET_IP_SRC.into(),
             ip.into(),

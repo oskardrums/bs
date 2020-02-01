@@ -1,4 +1,5 @@
 use crate::ebpf::operation::Operation;
+use crate::ebpf::operation::exit;
 use bpf_sys::*;
 use cvt::cvt;
 use libc::{c_void, setsockopt, SOL_SOCKET, SO_ATTACH_BPF};
@@ -26,13 +27,18 @@ impl Program {
 
     pub fn attach(mut self, socket: RawFd) -> Result<()> {
         unsafe {
+            let mut op = Operation::new();
+            op.set_code(0xb7 as _);
+            let mut v = vec![op, exit()];
+            let ptr = v.as_mut_ptr();
             let fd = cvt(bcc_prog_load(
                 bpf_prog_type_BPF_PROG_TYPE_SOCKET_FILTER,
-                CString::new("filter").unwrap().as_ptr(),
-                self.as_mut_ptr() as *const _,
-                (self.filter.len() * size_of::<Operation>()) as _,
+                CString::new("").unwrap().as_ptr(),
+                ptr as *const _,
+                (v.len() * size_of::<Operation>()) as _,
                 CString::new("GPL").unwrap().as_ptr(),
-                (4 << 16) + (19 << 8) + (0),
+                //(4 << 16) + (19 << 8) + (0),
+                0,
                 0,
                 null_mut(),
                 0,

@@ -48,6 +48,10 @@ use crate::ready_made;
 use condition::Condition;
 use std::net::Ipv4Addr;
 
+pub fn exit() -> Predicate<Condition> {
+    ready_made::drop_all::<Condition>()
+}
+
 pub fn ip_dst(ip: Ipv4Addr) -> Predicate<Condition> {
     ready_made::ip_dst::<Condition>(ip)
 }

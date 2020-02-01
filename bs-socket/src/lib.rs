@@ -35,8 +35,7 @@ mod tests {
     fn set_extended_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         let mut buf = [0; 1024];
-        let ip = "1.1.1.1".parse().unwrap();
-        let p = ebpf::ip_host(ip);
+        let p = ebpf::exit();
         let f = p.compile();
         s.set_filter(Extended(f)).unwrap();
         s.recv(&mut buf, 0);

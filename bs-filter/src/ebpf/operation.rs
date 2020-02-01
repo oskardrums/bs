@@ -3,9 +3,9 @@ pub type Code = u8;
 pub type OpCode = B8;
 pub type JumpOffset = u16;
 pub type Offset = B16;
-pub type Arg = u64;
+pub type Arg = u32;
 pub type Arg32 = u32;
-pub type ImmArg = B64;
+pub type ImmArg = B32;
 
 #[derive(BitfieldSpecifier, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub enum Register {
@@ -39,12 +39,15 @@ pub enum Register {
 #[bitfield]
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Operation {
+    #[bits = 8]
     code: OpCode,
     #[bits = 4]
     dst: Register,
     #[bits = 4]
     src: Register,
+    #[bits = 16]
     offset: Offset,
+    #[bits = 32]
     imm: ImmArg,
 }
 
