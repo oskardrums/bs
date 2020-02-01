@@ -22,7 +22,7 @@ impl JumpStrategy {
                 vec![op]
             },
             Self::Regs32(c, d, s) => {
-                op.set_code((BPF_JMP32 as u8 | c | BPF_X as u8) as _);
+                op.set_code((BPF_JMP as u8 | c | BPF_X as u8) as _);
                 op.set_dst(d);
                 op.set_src(s);
                 op.set_offset(offset);
@@ -38,7 +38,7 @@ impl JumpStrategy {
                 vec![op]
             },
             Self::Imm32(c, d, a) => {
-                op.set_code((BPF_JMP32 as u8 | c | BPF_K as u8) as _);
+                op.set_code((BPF_JMP as u8 | c | BPF_K as u8) as _);
                 op.set_dst(d);
                 op.set_offset(offset);
                 op.set_imm(a as _);

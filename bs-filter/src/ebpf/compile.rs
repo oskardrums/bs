@@ -1,7 +1,7 @@
-use std::iter::FromIterator;
-use crate::ebpf::Filter;
 use crate::ebpf::condition::Condition;
-use crate::ebpf::operation::{Operation, exit};
+use crate::ebpf::operation::{dup_reg, exit, set_reg_value, Operation, Register};
+use crate::ebpf::Filter;
+use std::iter::FromIterator;
 
 pub trait Compile
 where
@@ -47,6 +47,9 @@ impl Compile for Predicate<Condition> {
         let mut instructions = vec![exit()];
 
         instructions.extend(walk(self, instructions.len() as u16 - 1));
+
+        instructions.push(set_reg_value(Register::Ret, 0));
+        instructions.push(dup_reg(Register::ContextPointer, Register::PacketPointer));
 
         instructions.reverse();
 

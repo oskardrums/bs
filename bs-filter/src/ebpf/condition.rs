@@ -37,8 +37,7 @@ impl ConditionBuilder for Condition {
     fn offset_equals_u8(offset: Self::Offset, value: u8) -> Self::Condition {
         let mut op_load = Operation::new();
         op_load.set_code((BPF_LD | BPF_ABS | BPF_B) as u8);
-        op_load.set_dst(Register::Ret);
-        op_load.set_imm((offset as u32).to_be());
+        op_load.set_imm(offset as u32);
         Condition::new(
             Computation::new(vec![op_load]),
             JumpStrategy::Imm32(BPF_JEQ as _, Register::Ret, (value as u32).to_be()),
@@ -48,8 +47,7 @@ impl ConditionBuilder for Condition {
     fn offset_equals_u16(offset: Self::Offset, value: u16) -> Self::Condition {
         let mut op_load = Operation::new();
         op_load.set_code((BPF_LD | BPF_ABS | BPF_H) as _);
-        op_load.set_dst(Register::Ret);
-        op_load.set_imm((offset as u32).to_be());
+        op_load.set_imm(offset as u32);
         Condition::new(
             Computation::new(vec![op_load]),
             JumpStrategy::Imm32(BPF_JEQ as _, Register::Ret, (value as u32).to_be()),
@@ -59,8 +57,7 @@ impl ConditionBuilder for Condition {
     fn offset_equals_u32(offset: Self::Offset, value: u32) -> Self::Condition {
         let mut op_load = Operation::new();
         op_load.set_code((BPF_LD | BPF_ABS | BPF_W) as _);
-        op_load.set_dst(Register::Ret);
-        op_load.set_imm((offset as u32).to_be());
+        op_load.set_imm(offset as u32);
         Condition::new(
             Computation::new(vec![op_load]),
             JumpStrategy::Imm32(BPF_JEQ as _, Register::Ret, value.to_be()),
@@ -70,8 +67,7 @@ impl ConditionBuilder for Condition {
     fn offset_equals_u64(offset: Self::Offset, value: u64) -> Self::Condition {
         let mut op_load = Operation::new();
         op_load.set_code((BPF_LD | BPF_ABS | BPF_DW) as _);
-        op_load.set_dst(Register::Ret);
-        op_load.set_imm((offset as u32).to_be());
+        op_load.set_imm(offset as u32);
         Condition::new(
             Computation::new(vec![op_load]),
             JumpStrategy::Imm(BPF_JEQ as _, Register::Ret, (value as u32).to_be()),

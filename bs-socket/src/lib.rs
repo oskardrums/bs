@@ -14,11 +14,11 @@ mod tests {
     use super::tcp::*;
     use super::udp::*;
     use bs_filter::*;
-    use bs_filter::ebpf::Compile;
+    use bs_filter::ebpf::Compile as ECompile;
+    use bs_filter::cbpf::Compile as CCompile;
     use bs_filter::Filter::*;
     use libc::SOCK_NONBLOCK;
 
-    /*
     #[test]
     fn set_classic_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
@@ -29,13 +29,13 @@ mod tests {
         s.set_filter(Classic(f)).unwrap();
         s.recv(&mut buf, 0);
     }
-    */
 
     #[test]
     fn set_extended_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         let mut buf = [0; 1024];
-        let p = ebpf::exit();
+        let ip = "1.1.1.1".parse().unwrap();
+        let p = ebpf::ip_host(ip);
         let f = p.compile();
         s.set_filter(Extended(f)).unwrap();
         s.recv(&mut buf, 0);

@@ -10,16 +10,16 @@ pub type ImmArg = B32;
 #[derive(BitfieldSpecifier, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub enum Register {
     Ret = 0,
-    Arg1 = 1,
+    ContextPointer = 1,
     Arg2 = 2,
     Arg3 = 3,
     Arg4 = 4,
     Arg5 = 5,
-    Gen1 = 6,
-    Gen2 = 7,
-    Gen3 = 8,
-    Gen4 = 9,
-    Frame = 10,
+    PacketPointer = 6,
+    Gen1 = 7,
+    Gen2 = 8,
+    Gen3 = 9,
+    FramePointer = 10,
     // BitfieldSpecifier demands that the number
     // of variants will be a power of 2
     // so we need to define phantom variants to get
@@ -60,5 +60,21 @@ use bpf_sys::*;
 pub fn exit() -> Operation {
     let mut op = Operation::new();
     op.set_code((BPF_JMP | BPF_EXIT) as _);
+    op
+}
+
+pub fn set_reg_value(reg: Register, value: u32) -> Operation {
+    let mut op = Operation::new();
+    op.set_code((BPF_ALU64 | BPF_MOV | BPF_W) as _);
+    op.set_dst(reg);
+    op.set_imm(value.to_be());
+    op
+}
+
+pub fn dup_reg(src: Register, dst: Register) -> Operation {
+    let mut op = Operation::new();
+    op.set_code((BPF_ALU64 | BPF_MOV | BPF_X) as _);
+    op.set_dst(dst);
+    op.set_src(src);
     op
 }
