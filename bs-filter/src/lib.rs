@@ -2,10 +2,10 @@
 mod tests;
 
 pub mod cbpf;
-pub(crate) mod condition_builder;
-pub mod ebpf;
+//pub(crate) mod condition_builder;
+//pub mod ebpf;
 pub(crate) mod predicate;
-pub(crate) mod ready_made;
+//pub(crate) mod ready_made;
 pub(crate) mod util;
 use std::marker::PhantomData;
 
@@ -46,16 +46,6 @@ impl<K: backend::Backend> Into<Program<K>> for Filter<K> {
     }
 }
 
-use libc::c_void;
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct SocketOption<K: backend::FilterBackend> {
-    value: *mut c_void,
-    len: u16,
-    phantom: PhantomData<K>,
-}
-
 #[repr(C)]
 #[derive(Debug)]
 pub struct Program<K: backend::Backend> {
@@ -67,11 +57,7 @@ impl<K: backend::Backend> Program<K> {
         Self { filter: ops }
     }
 
-    fn as_mut_ptr(&mut self) -> *mut Instruction<K> {
-        self.filter.as_mut_ptr()
-    }
-
-    pub fn build(mut self) -> Result<SocketOption<K>> {
+    pub fn build(self) -> Result<K::SocketOption> {
         K::into_socket_option(self.filter)
     }
 }
@@ -88,7 +74,7 @@ pub struct Computation<K: backend::Backend> {
 }
 
 impl<K: backend::Backend> Computation<K> {
-    pub const fn new(instructions: Vec<Instruction<K>>) -> Self {
+    pub fn new(instructions: Vec<Instruction<K>>) -> Self {
         Self { instructions }
     }
 
@@ -105,11 +91,7 @@ pub struct Condition<K: backend::Backend> {
 }
 
 impl<K: backend::Backend> Condition<K> {
-    pub const fn new(
-        computation: Computation<K>,
-        comparison: K::Comparison,
-        operand: K::Value,
-    ) -> Self {
+    pub fn new(computation: Computation<K>, comparison: K::Comparison, operand: K::Value) -> Self {
         Self {
             computation,
             comparison,
@@ -121,16 +103,16 @@ impl<K: backend::Backend> Condition<K> {
         self.computation
     }
 
-    pub fn comparison(&self) -> K::Comparison {
-        self.comparison
+    pub fn comparison(&self) -> &K::Comparison {
+        &self.comparison
     }
 
-    pub fn operand(&self) -> K::Value {
-        self.operand
+    pub fn operand(&self) -> &K::Value {
+        &self.operand
     }
 
     pub fn build(self, jt: usize, jf: usize) -> Vec<Instruction<K>> {
-        let mut res = K::jump(self.comparison(), self.operand(), jt, jf);
+        let mut res = K::jump(self.comparison, self.operand, jt, jf);
         res.extend(self.computation.build());
         res
     }
@@ -147,7 +129,7 @@ where
 
     fn into_expr(self) -> Expr<Condition<K>>;
 
-    fn walk(mut self, jt: usize, jf: usize) -> Vec<Instruction<K>> {
+    fn walk(self, jt: usize, jf: usize) -> Vec<Instruction<K>> {
         match self.into_expr() {
             Terminal(condition) => condition.build(jt, jf),
             Not(e) => Predicate::from(*e).walk(jf, jt),
@@ -197,12 +179,11 @@ impl<K: backend::Backend> Compile<K> for Predicate<Condition<K>> {
 /// (Classic / Extended). This module will be replaced
 /// with an enum when const generics land in stable rust.
 pub mod backend {
+    use crate::cbpf;
     use crate::Instruction;
     use crate::Result;
-    use crate::SocketOption;
     use std::fmt::Debug;
     use std::hash::Hash;
-    use crate::cbpf;
 
     /// Phantom struct to represent Classic BPF related
     /// functionalities.
@@ -214,31 +195,44 @@ pub mod backend {
     #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
     pub struct Extended {}
 
-    pub trait FilterBackend {}
-    impl FilterBackend for Classic {}
-    impl FilterBackend for Extended {}
-
+    pub trait FilterBackend {
+        type SocketOption;
+    }
+    impl FilterBackend for Classic {
+        type SocketOption = cbpf::SocketOption;
+    }
     pub trait Backend: Sized + Clone + Ord + Debug + Hash + FilterBackend {
         type Comparison: Clone + Ord + Debug + Hash;
         type Value: Clone + Ord + Debug + Hash;
 
+        fn option_level() -> i32;
+        fn option_name() -> i32;
         fn initialization_sequence() -> Vec<Instruction<Self>>;
         fn return_sequence() -> (Vec<Instruction<Self>>, usize, usize);
         fn teotology() -> Vec<Instruction<Self>>;
         fn contradiction() -> Vec<Instruction<Self>>;
-        fn into_socket_option(instructions: Vec<Instruction<Self>>) -> Result<SocketOption<Self>>;
+        fn into_socket_option(instructions: Vec<Instruction<Self>>) -> Result<Self::SocketOption>;
         fn jump(
             comparison: Self::Comparison,
             operand: Self::Value,
             jt: usize,
             jf: usize,
         ) -> Vec<Instruction<Self>>;
+        fn load_u8_at(offset: u32) -> Vec<Instruction<Self>>;
+        fn load_u16_at(offset: u32) -> Vec<Instruction<Self>>;
+        fn load_u32_at(offset: u32) -> Vec<Instruction<Self>>;
     }
 
     impl Backend for Classic {
         type Comparison = cbpf::Comparison;
         type Value = cbpf::Value;
 
+        fn option_level() -> i32 {
+            cbpf::OPTION_LEVEL
+        }
+        fn option_name() -> i32 {
+            cbpf::OPTION_NAME
+        }
         fn initialization_sequence() -> Vec<Instruction<Self>> {
             cbpf::initialization_sequence()
         }
@@ -251,7 +245,7 @@ pub mod backend {
         fn contradiction() -> Vec<Instruction<Self>> {
             cbpf::contradiction()
         }
-        fn into_socket_option(instructions: Vec<Instruction<Self>>) -> Result<SocketOption<Self>> {
+        fn into_socket_option(instructions: Vec<Instruction<Self>>) -> Result<Self::SocketOption> {
             cbpf::into_socket_option(instructions)
         }
         fn jump(
@@ -262,6 +256,14 @@ pub mod backend {
         ) -> Vec<Instruction<Self>> {
             cbpf::jump(comparison, operand, jt, jf)
         }
+        fn load_u16_at(offset: u32) -> Vec<Instruction<Self>> {
+            cbpf::load_u16_at(offset)
+        }
+    }
+
+    /*
+    impl FilterBackend for Extended {
+        type SocketOption = ebpf::SocketOption;
     }
 
     impl Backend for Extended {
@@ -280,7 +282,7 @@ pub mod backend {
         fn contradiction() -> Vec<Instruction<Self>> {
             ebpf::contradiction()
         }
-        fn into_socket_option(instructions: Vec<Instruction<Self>>) -> Result<SocketOption<Self>> {
+        fn into_socket_option(instructions: Vec<Instruction<Self>>) -> Result<Self::SocketOption> {
             ebpf::into_socket_option()
         }
         fn jump(
@@ -292,4 +294,36 @@ pub mod backend {
             cbpf::jump(comparison, operand, jt, jf)
         }
     }
+    */
+}
+pub use backend::Backend;
+use crate::util::*;
+
+pub fn ether_type<K: backend::Backend>(ether_type: u16) -> Condition<K> {
+    Condition::new(
+        Computation::new(K::offset_equals_u16(OFFSET_ETHER_TYPE, ether_type)))
+}
+
+pub fn ip_dst<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
+    Predicate::from(And(
+        Box::new(Terminal(ether_type::<B>(ETH_P_IP as u16))),
+        Box::new(Terminal(B::offset_equals_u32(
+            OFFSET_IP_DST.into(),
+            ip.into(),
+        ))),
+    ))
+}
+
+pub fn ip_src<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
+    Predicate::from(And(
+        Box::new(Terminal(ether_type::<B>(ETH_P_IP as u16))),
+        Box::new(Terminal(B::offset_equals_u32(
+            OFFSET_IP_SRC.into(),
+            ip.into(),
+        ))),
+    ))
+}
+
+pub fn ip_host<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
+    ip_src::<B>(ip) | ip_dst::<B>(ip)
 }

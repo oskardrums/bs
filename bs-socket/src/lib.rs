@@ -14,9 +14,6 @@ mod tests {
     use super::tcp::*;
     use super::udp::*;
     use bs_filter::*;
-    use bs_filter::ebpf::Compile as ECompile;
-    use bs_filter::cbpf::Compile as CCompile;
-    use bs_filter::Filter::*;
     use libc::SOCK_NONBLOCK;
 
     #[test]
@@ -26,10 +23,11 @@ mod tests {
         let ip = "1.1.1.1".parse().unwrap();
         let p = cbpf::ip_host(ip);
         let f = p.compile();
-        s.set_filter(Classic(f)).unwrap();
+        s.set_filter(f).unwrap();
         s.recv(&mut buf, 0);
     }
 
+    /*
     #[test]
     fn set_extended_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
@@ -40,7 +38,7 @@ mod tests {
         s.set_filter(Extended(f)).unwrap();
         s.recv(&mut buf, 0);
     }
-
+    */
     #[test]
     fn packet_layer2_socket_flags() {
         let mut s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();

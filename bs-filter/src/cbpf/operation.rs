@@ -59,11 +59,11 @@ pub const fn return_imm(k: u32) -> Operation {
     }
 }
 
-pub fn jump(comparison: u8, operand: u32, jt: usize, jf: usize) {
+pub fn jump(comparison: u8, operand: u32, jt: usize, jf: usize) -> Operation {
     Operation {
-        code: (BPF_JMP | comparison | BPF_K) as _,
-        jt,
-        jf,
+        code: (BPF_JMP as u8 | comparison | BPF_K as u8) as _,
+        jt: jt as _,
+        jf: jf as _,
         k: operand as _,
     }
 }

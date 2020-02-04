@@ -1,68 +1,6 @@
-pub(crate) mod compile;
-pub(crate) mod computation;
-pub(crate) mod condition;
-pub(crate) mod operation;
-pub(crate) mod program;
-pub(crate) mod return_strategy;
-
-pub use compile::Compile;
-use condition::Condition;
-pub use operation::{Operation, DROP};
-pub use program::Program;
-pub use return_strategy::ReturnStrategy;
-use std::iter::FromIterator;
-
-pub struct Filter {
-    inner: Vec<Operation>,
-}
-
-impl Filter {
-    pub fn drop_all() -> Self {
-        Self { inner: vec![DROP] }
-    }
-    pub fn into_inner(self) -> Vec<Operation> {
-        self.inner
-    }
-}
-
-impl FromIterator<Operation> for Filter {
-    fn from_iter<I: IntoIterator<Item = Operation>>(iter: I) -> Self {
-        Self {
-            inner: Vec::from_iter(iter),
-        }
-    }
-}
-
-impl IntoIterator for Filter {
-    type Item = Operation;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.inner.into_iter()
-    }
-}
-
-impl Into<Program> for Filter {
-    fn into(self) -> Program {
-        Program::new(self.into_inner())
-    }
-}
-
-use crate::predicate::Predicate;
-use crate::ready_made;
-use std::net::Ipv4Addr;
-
-pub fn ip_dst(ip: Ipv4Addr) -> Predicate<Condition> {
-    ready_made::ip_dst::<Condition>(ip)
-}
-
-pub fn ip_src(ip: Ipv4Addr) -> Predicate<Condition> {
-    ready_made::ip_src::<Condition>(ip)
-}
-
-pub fn ip_host(ip: Ipv4Addr) -> Predicate<Condition> {
-    ready_made::ip_host::<Condition>(ip)
-}
+use libc::{SOL_SOCKET, SO_ATTACH_FILTER};
+pub const OPTION_LEVEL: i32 = SOL_SOCKET;
+pub const OPTION_NAME: i32 = SO_ATTACH_FILTER;
 
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub enum Comparison {
@@ -76,9 +14,28 @@ pub type Value = u32;
 
 use crate::backend::Classic as Kind;
 use crate::Instruction;
-use crate::SocketOption;
 use crate::Result;
-use operation::{LOAD_LENGTH, RETURN_A};
+use bpf_sys::*;
+use std::marker::PhantomData;
+
+// BPF_A is missing from bpf_sys
+const BPF_A: u32 = 0x10;
+
+const DROP: Instruction<Kind> = Instruction {
+    bytes: [(BPF_RET | BPF_K) as _; 8],
+    phantom: PhantomData,
+};
+
+const RETURN_A: Instruction<Kind> = Instruction {
+    bytes: [(BPF_RET | BPF_A) as _; 8],
+    phantom: PhantomData,
+};
+
+const LOAD_LENGTH: Instruction<Kind> = Instruction {
+    bytes: [(BPF_LD | BPF_LEN | BPF_W) as _; 8],
+    phantom: PhantomData,
+};
+
 pub fn initialization_sequence() -> Vec<Instruction<Kind>> {
     Default::default()
 }
@@ -91,17 +48,44 @@ pub fn teotology() -> Vec<Instruction<Kind>> {
 pub fn contradiction() -> Vec<Instruction<Kind>> {
     vec![DROP]
 }
-pub fn into_socket_option(instructions: Vec<Instruction<Kind>>) -> Result<SocketOption<Kind>> {
+
+pub struct SocketOption {
+    value: Vec<Instruction<Kind>>,
+}
+
+pub fn into_socket_option(instructions: Vec<Instruction<Kind>>) -> Result<SocketOption> {
     Ok(SocketOption {
-        len: 10, // TODO - undo magic
-        value: instructions // TODO - this wrong, should be sock_fprog
+        value: instructions,
     })
 }
+
+use std::mem::transmute;
+mod operation;
 pub fn jump(
     comparison: Comparison,
     operand: Value,
     jt: usize,
     jf: usize,
 ) -> Vec<Instruction<Kind>> {
-    vec![jump(comparison, operand, jt, jf)]
+    // TODO - implement
+    unsafe {
+        vec![transmute::<operation::Operation, Instruction<Kind>>(
+            operation::jump(comparison as _, operand, jt, jf),
+        )]
+    }
+}
+
+pub fn load_u8_at(offset: u32) -> Vec<Instruction<Kind>> {
+    let op = operation::Operation::new((BPF_ABS | BPF_LD | BPF_B) as _, 0, 0, offset);
+    vec![transmute::<operation::Operation, Instruction<Kind>>(op)]
+}
+
+pub fn load_u16_at(offset: u32) -> Vec<Instruction<Kind>> {
+    let op = operation::Operation::new((BPF_ABS | BPF_LD | BPF_H) as _, 0, 0, offset);
+    vec![transmute::<operation::Operation, Instruction<Kind>>(op)]
+}
+
+pub fn load_u32_at(offset: u32) -> Vec<Instruction<Kind>> {
+    let op = operation::Operation::new((BPF_ABS | BPF_LD | BPF_W) as _, 0, 0, offset);
+    vec![transmute::<operation::Operation, Instruction<Kind>>(op)]
 }

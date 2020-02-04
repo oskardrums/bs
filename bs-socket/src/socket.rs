@@ -1,7 +1,7 @@
 use cvt::cvt;
 use libc::{
     c_void, close, fcntl, setsockopt, socket, socklen_t, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD,
-    F_SETFL, MSG_DONTWAIT, O_NONBLOCK, SOL_SOCKET, SO_ATTACH_FILTER,
+    F_SETFL, MSG_DONTWAIT, O_NONBLOCK,
 };
 
 use bs_filter as filter;
@@ -31,6 +31,7 @@ pub struct Socket<S: SocketDesc> {
     inner: S,
 }
 
+use std::iter::FromIterator;
 impl<S: SocketDesc> Socket<S> {
     pub(crate) fn os(&self) -> i32 {
         self.inner.os()
@@ -88,32 +89,25 @@ impl<S: SocketDesc> Socket<S> {
         unsafe { cvt(fcntl(self.os(), F_GETFD)) }
     }
 
-    fn attach_filter(&mut self, filter: filter::Filter) -> Result<()> {
-        match filter {
-            filter::Filter::Classic(f) => {
-                let prog: filter::cbpf::Program = f.into();
-                match unsafe {
-                    cvt(setsockopt(
-                        self.os(),
-                        SOL_SOCKET,
-                        SO_ATTACH_FILTER,
-                        &prog as *const _ as *const c_void,
-                        size_of_val(&prog) as socklen_t,
-                    ))
-                } {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(e),
-                }
-            }
-            filter::Filter::Extended(e) => {
-                let prog: filter::ebpf::Program = e.into();
-                prog.attach(self.as_raw_fd())
-            }
+    fn attach_filter<K: filter::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
+        let prog: filter::Program<K> = filter.into();
+        let opt = prog.build();
+        match unsafe {
+            cvt(setsockopt(
+                self.os(),
+                K::option_level(),
+                K::option_name(),
+                &opt as *const _ as *const c_void,
+                size_of_val(&opt) as socklen_t,
+            ))
+        } {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
         }
     }
     // TODO - feature filter
-    pub fn set_filter(&mut self, filter: filter::Filter) -> Result<()> {
-        self.attach_filter(filter::Filter::Classic(filter::cbpf::Filter::drop_all()))?;
+    pub fn set_filter<K: filter::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
+        self.attach_filter(filter::Filter::from_iter(K::contradiction()))?;
         self.drain()?;
         self.attach_filter(filter)
     }
