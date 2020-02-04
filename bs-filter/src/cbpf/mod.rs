@@ -63,3 +63,45 @@ pub fn ip_src(ip: Ipv4Addr) -> Predicate<Condition> {
 pub fn ip_host(ip: Ipv4Addr) -> Predicate<Condition> {
     ready_made::ip_host::<Condition>(ip)
 }
+
+#[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
+pub enum Comparison {
+    Equal = 0x10,
+    GreaterThan = 0x20,
+    GreaterEqual = 0x30,
+    AndMask = 0x40,
+}
+
+pub type Value = u32;
+
+use crate::backend::Classic as Kind;
+use crate::Instruction;
+use crate::SocketOption;
+use crate::Result;
+use operation::{LOAD_LENGTH, RETURN_A};
+pub fn initialization_sequence() -> Vec<Instruction<Kind>> {
+    Default::default()
+}
+pub fn return_sequence() -> (Vec<Instruction<Kind>>, usize, usize) {
+    (vec![RETURN_A, LOAD_LENGTH, DROP], 1, 2)
+}
+pub fn teotology() -> Vec<Instruction<Kind>> {
+    vec![RETURN_A, LOAD_LENGTH]
+}
+pub fn contradiction() -> Vec<Instruction<Kind>> {
+    vec![DROP]
+}
+pub fn into_socket_option(instructions: Vec<Instruction<Kind>>) -> Result<SocketOption<Kind>> {
+    Ok(SocketOption {
+        len: 10, // TODO - undo magic
+        value: instructions // TODO - this wrong, should be sock_fprog
+    })
+}
+pub fn jump(
+    comparison: Comparison,
+    operand: Value,
+    jt: usize,
+    jf: usize,
+) -> Vec<Instruction<Kind>> {
+    vec![jump(comparison, operand, jt, jf)]
+}

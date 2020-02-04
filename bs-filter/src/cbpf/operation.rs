@@ -17,7 +17,6 @@ impl Operation {
     }
 }
 
-
 use bpf_sys::*;
 
 // BPF_A is missing from bpf_sys
@@ -37,6 +36,20 @@ pub const RETURN_A: Operation = Operation {
     k: 0,
 };
 
+pub const CLEAR_A: Operation = Operation {
+    code: (BPF_LD | BPF_IMM) as _,
+    jt: 0,
+    jf: 0,
+    k: 0,
+};
+
+pub const LOAD_LENGTH: Operation = Operation {
+    code: (BPF_LD | BPF_LEN | BPF_W) as _,
+    jt: 0,
+    jf: 0,
+    k: 0,
+};
+
 pub const fn return_imm(k: u32) -> Operation {
     Operation {
         code: (BPF_RET | BPF_K) as _,
@@ -46,4 +59,11 @@ pub const fn return_imm(k: u32) -> Operation {
     }
 }
 
-
+pub fn jump(comparison: u8, operand: u32, jt: usize, jf: usize) {
+    Operation {
+        code: (BPF_JMP | comparison | BPF_K) as _,
+        jt,
+        jf,
+        k: operand as _,
+    }
+}

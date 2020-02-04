@@ -8,11 +8,7 @@ pub trait Compile
 where
     Self: Sized,
 {
-    fn compile_with_return_strategy(self, return_strategy: ReturnStrategy) -> Filter;
-
-    fn compile(self) -> Filter {
-        self.compile_with_return_strategy(ReturnStrategy::Truncate(u16::max_value() as _))
-    }
+    fn compile(self) -> Filter;
 }
 
 use crate::predicate::Predicate;

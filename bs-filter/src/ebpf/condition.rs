@@ -40,7 +40,7 @@ impl ConditionBuilder for Condition {
         op_load.set_imm(offset as u32);
         Condition::new(
             Computation::new(vec![op_load]),
-            JumpStrategy::Imm32(BPF_JEQ as _, Register::Ret, (value as u32).to_be()),
+            JumpStrategy::Imm32(BPF_JNE as _, Register::Ret, (value as u32).to_be()),
         )
     }
 
@@ -50,7 +50,7 @@ impl ConditionBuilder for Condition {
         op_load.set_imm(offset as u32);
         Condition::new(
             Computation::new(vec![op_load]),
-            JumpStrategy::Imm32(BPF_JEQ as _, Register::Ret, (value as u32).to_be()),
+            JumpStrategy::Imm32(BPF_JNE as _, Register::Ret, (value as u32).to_be()),
         )
     }
 
@@ -60,7 +60,7 @@ impl ConditionBuilder for Condition {
         op_load.set_imm(offset as u32);
         Condition::new(
             Computation::new(vec![op_load]),
-            JumpStrategy::Imm32(BPF_JEQ as _, Register::Ret, value.to_be()),
+            JumpStrategy::Imm32(BPF_JNE as _, Register::Ret, value.to_be()),
         )
     }
 
@@ -70,7 +70,7 @@ impl ConditionBuilder for Condition {
         op_load.set_imm(offset as u32);
         Condition::new(
             Computation::new(vec![op_load]),
-            JumpStrategy::Imm(BPF_JEQ as _, Register::Ret, (value as u32).to_be()),
+            JumpStrategy::Imm(BPF_JNE as _, Register::Ret, (value as u32).to_be()),
         )
     }
 }
