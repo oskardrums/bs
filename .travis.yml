@@ -7,6 +7,3 @@ matrix:
     allow_failures:
         - rust: nightly
 cache: cargo
-script:
-    - cargo build --verbose --all
-    - sudo -E env cargo test --verbose --all
