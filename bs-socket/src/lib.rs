@@ -20,9 +20,9 @@ mod tests {
     fn set_classic_filter() {
         let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         let mut buf = [0; 1024];
-        let ip = "1.1.1.1".parse().unwrap();
-        let p = cbpf::ip_host(ip);
+        let p = ether_type_arp::<Classic>();
         let f = p.compile();
+        println!("{:?}", f);
         s.set_filter(f).unwrap();
         s.recv(&mut buf, 0);
     }
@@ -39,6 +39,7 @@ mod tests {
         s.recv(&mut buf, 0);
     }
     */
+
     #[test]
     fn packet_layer2_socket_flags() {
         let mut s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();

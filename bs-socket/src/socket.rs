@@ -1,17 +1,17 @@
 use cvt::cvt;
 use libc::{
-    c_void, close, fcntl, setsockopt, socket, socklen_t, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD,
+    c_void, close, fcntl, socket, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD,
     F_SETFL, MSG_DONTWAIT, O_NONBLOCK,
 };
 
 use bs_filter as filter;
+use filter::ApplyFilter;
 
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 
 use std::io::ErrorKind::{Interrupted, WouldBlock};
 use std::io::Result;
-use std::mem::size_of_val;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
 pub const PROTO_NULL: i32 = 0_i32;
@@ -91,23 +91,15 @@ impl<S: SocketDesc> Socket<S> {
 
     fn attach_filter<K: filter::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
         let prog: filter::Program<K> = filter.into();
-        let opt = prog.build();
-        match unsafe {
-            cvt(setsockopt(
-                self.os(),
-                K::option_level(),
-                K::option_name(),
-                &opt as *const _ as *const c_void,
-                size_of_val(&opt) as socklen_t,
-            ))
-        } {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        }
+        println!("{:?}", prog);
+        let mut opt = prog.build()?;
+        opt.apply(self.os())
     }
     // TODO - feature filter
     pub fn set_filter<K: filter::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
-        self.attach_filter(filter::Filter::from_iter(K::contradiction()))?;
+        let drop_filter = filter::Filter::from_iter(K::contradiction());
+        println!("{:?}", drop_filter);
+        self.attach_filter(drop_filter)?;
         self.drain()?;
         self.attach_filter(filter)
     }

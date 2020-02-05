@@ -8,8 +8,7 @@ pub(crate) mod predicate;
 //pub(crate) mod ready_made;
 pub(crate) mod util;
 use std::marker::PhantomData;
-
-pub type Result<T> = std::result::Result<T, ()>;
+pub use std::io::Result;
 
 #[repr(C)]
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd, Default)]
@@ -18,6 +17,7 @@ pub struct Instruction<K: backend::FilterBackend> {
     phantom: PhantomData<K>,
 }
 
+#[derive(Debug)]
 pub struct Filter<K: backend::Backend> {
     inner: Vec<Instruction<K>>,
 }
@@ -166,6 +166,9 @@ impl<K: backend::Backend> Compile<K> for Predicate<Condition<K>> {
 
         instructions.extend(K::initialization_sequence());
 
+        instructions.reverse();
+        println!("{:?}", instructions);
+
         Filter::from_iter(instructions)
     }
 
@@ -173,6 +176,12 @@ impl<K: backend::Backend> Compile<K> for Predicate<Condition<K>> {
         self.into_inner()
     }
 }
+
+use std::os::unix::io::RawFd;
+pub trait ApplyFilter {
+    fn apply(&mut self, fd: RawFd) -> Result<()>;
+}
+
 
 /// The `backend` module holds phantom structs that
 /// represent the relevant backend of BPF operation
@@ -182,6 +191,7 @@ pub mod backend {
     use crate::cbpf;
     use crate::Instruction;
     use crate::Result;
+    use crate::ApplyFilter;
     use std::fmt::Debug;
     use std::hash::Hash;
 
@@ -196,14 +206,14 @@ pub mod backend {
     pub struct Extended {}
 
     pub trait FilterBackend {
-        type SocketOption;
+        type SocketOption: Debug + ApplyFilter;
     }
     impl FilterBackend for Classic {
         type SocketOption = cbpf::SocketOption;
     }
     pub trait Backend: Sized + Clone + Ord + Debug + Hash + FilterBackend {
-        type Comparison: Clone + Ord + Debug + Hash;
-        type Value: Clone + Ord + Debug + Hash;
+        type Comparison: Clone + Ord + Debug + Hash + From<u8>;
+        type Value: Clone + Ord + Debug + Hash + From<u32>;
 
         fn option_level() -> i32;
         fn option_name() -> i32;
@@ -256,8 +266,14 @@ pub mod backend {
         ) -> Vec<Instruction<Self>> {
             cbpf::jump(comparison, operand, jt, jf)
         }
+        fn load_u8_at(offset: u32) -> Vec<Instruction<Self>> {
+            cbpf::load_u8_at(offset)
+        }
         fn load_u16_at(offset: u32) -> Vec<Instruction<Self>> {
             cbpf::load_u16_at(offset)
+        }
+        fn load_u32_at(offset: u32) -> Vec<Instruction<Self>> {
+            cbpf::load_u32_at(offset)
         }
     }
 
@@ -296,14 +312,24 @@ pub mod backend {
     }
     */
 }
-pub use backend::Backend;
 use crate::util::*;
+use bpf_sys::*;
+pub use backend::Backend;
+pub use backend::Classic;
 
 pub fn ether_type<K: backend::Backend>(ether_type: u16) -> Condition<K> {
     Condition::new(
-        Computation::new(K::offset_equals_u16(OFFSET_ETHER_TYPE, ether_type)))
+        Computation::new(K::load_u16_at(OFFSET_ETHER_TYPE as _)),
+        K::Comparison::from(BPF_JEQ as u8),
+        K::Value::from(ether_type as u32),
+    )
 }
 
+pub fn ether_type_arp<K: backend::Backend>() -> Predicate<Condition<K>> {
+    Predicate::from(Terminal(ether_type(0x0806))) // TODO - undo magic
+}
+
+/*
 pub fn ip_dst<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
     Predicate::from(And(
         Box::new(Terminal(ether_type::<B>(ETH_P_IP as u16))),
@@ -327,3 +353,4 @@ pub fn ip_src<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
 pub fn ip_host<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
     ip_src::<B>(ip) | ip_dst::<B>(ip)
 }
+*/
