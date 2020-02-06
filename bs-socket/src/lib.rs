@@ -13,7 +13,9 @@ mod tests {
     use super::socket::*;
     use super::tcp::*;
     use super::udp::*;
-    use bs_filter::*;
+    use bs_filter::idiom::ethernet::ether_type_arp;
+    use bs_filter::Classic;
+    use bs_filter::Compile;
     use libc::SOCK_NONBLOCK;
 
     #[test]
@@ -24,7 +26,7 @@ mod tests {
         let f = p.compile();
         println!("{:?}", f);
         s.set_filter(f).unwrap();
-        s.recv(&mut buf, 0);
+        s.recv(&mut buf, 0).unwrap();
     }
 
     /*

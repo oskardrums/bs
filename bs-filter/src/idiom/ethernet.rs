@@ -1,4 +1,4 @@
-use crate::{util, backend::Backend, predicate::Predicate, Condition, predicate::Expr::*};
+use crate::{backend::Backend, predicate::Expr::*, predicate::Predicate, util, Condition};
 use libc::ETH_P_ARP;
 
 pub fn ether_type<K: Backend>(ether_type: u16) -> Predicate<Condition<K>> {

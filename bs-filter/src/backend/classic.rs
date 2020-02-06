@@ -1,13 +1,11 @@
-use crate::cbpf;
 use crate::backend::{Backend, FilterBackend};
-use crate::{Instruction, Result};
+use crate::cbpf;
+use crate::Result;
 
 /// Phantom struct to represent Classic BPF related
 /// functionalities.
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Classic {}
-
-pub(crate) type Kind = Classic;
 
 impl FilterBackend for Classic {
     type SocketOption = cbpf::SocketOption;
@@ -16,6 +14,7 @@ impl FilterBackend for Classic {
 impl Backend for Classic {
     type Comparison = cbpf::Comparison;
     type Value = cbpf::Value;
+    type Instruction = cbpf::Instruction;
 
     fn option_level() -> i32 {
         cbpf::OPTION_LEVEL
@@ -23,19 +22,19 @@ impl Backend for Classic {
     fn option_name() -> i32 {
         cbpf::OPTION_NAME
     }
-    fn initialization_sequence() -> Vec<Instruction<Self>> {
+    fn initialization_sequence() -> Vec<Self::Instruction> {
         cbpf::initialization_sequence()
     }
-    fn return_sequence() -> (Vec<Instruction<Self>>, usize, usize) {
+    fn return_sequence() -> (Vec<Self::Instruction>, usize, usize) {
         cbpf::return_sequence()
     }
-    fn teotology() -> Vec<Instruction<Self>> {
+    fn teotology() -> Vec<Self::Instruction> {
         cbpf::teotology()
     }
-    fn contradiction() -> Vec<Instruction<Self>> {
+    fn contradiction() -> Vec<Self::Instruction> {
         cbpf::contradiction()
     }
-    fn into_socket_option(instructions: Vec<Instruction<Self>>) -> Result<Self::SocketOption> {
+    fn into_socket_option(instructions: Vec<Self::Instruction>) -> Result<Self::SocketOption> {
         cbpf::into_socket_option(instructions)
     }
     fn jump(
@@ -43,16 +42,16 @@ impl Backend for Classic {
         operand: Self::Value,
         jt: usize,
         jf: usize,
-    ) -> Vec<Instruction<Self>> {
+    ) -> Vec<Self::Instruction> {
         cbpf::jump(comparison, operand, jt, jf)
     }
-    fn load_u8_at(offset: u32) -> Vec<Instruction<Self>> {
+    fn load_u8_at(offset: u32) -> Vec<Self::Instruction> {
         cbpf::load_u8_at(offset)
     }
-    fn load_u16_at(offset: u32) -> Vec<Instruction<Self>> {
+    fn load_u16_at(offset: u32) -> Vec<Self::Instruction> {
         cbpf::load_u16_at(offset)
     }
-    fn load_u32_at(offset: u32) -> Vec<Instruction<Self>> {
+    fn load_u32_at(offset: u32) -> Vec<Self::Instruction> {
         cbpf::load_u32_at(offset)
     }
 }

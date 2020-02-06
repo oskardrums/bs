@@ -24,6 +24,3 @@ pub fn ip_host<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
     ip_src::<B>(ip) | ip_dst::<B>(ip)
 }
 */
-
-
-
