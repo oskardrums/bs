@@ -14,19 +14,17 @@ mod tests {
     use super::tcp::*;
     use super::udp::*;
     use bs_filter::idiom::ethernet::ether_type_arp;
-    use bs_filter::Classic;
+    use bs_filter::backend::Classic;
     use bs_filter::Compile;
     use libc::SOCK_NONBLOCK;
 
     #[test]
     fn set_classic_filter() {
-        let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
-        let mut buf = [0; 1024];
+        // UDP is arbitrary here
+        let mut s: Socket<UdpSocket> = Socket::new().unwrap();
         let p = ether_type_arp::<Classic>();
         let f = p.compile();
-        println!("{:?}", f);
         s.set_filter(f).unwrap();
-        s.recv(&mut buf, 0).unwrap();
     }
 
     /*

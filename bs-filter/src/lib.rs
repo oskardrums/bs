@@ -1,20 +1,17 @@
 pub(crate) mod cbpf;
 pub(crate) mod compile;
 //pub(crate) mod ebpf;
-pub(crate) mod backend;
 pub(crate) mod predicate;
 pub(crate) mod util;
-
 pub(crate) mod filter;
 pub(crate) mod program;
 
-pub use backend::classic::Classic;
-pub use backend::Backend;
 pub use compile::Compile;
 pub use filter::Filter;
 pub use predicate::Predicate;
 pub use program::Program;
 pub mod idiom;
+pub mod backend;
 
 // currently our "custom" Result type is std::io::Result
 pub use std::io::Result;
@@ -66,32 +63,6 @@ impl<K: backend::Backend> Condition<K> {
         let mut res = K::jump(self.comparison, self.operand, jt, jf);
         res.extend(self.computation.build());
         res
-    }
-}
-
-use predicate::Expr;
-use std::cmp::Ord;
-use std::fmt::Debug;
-use std::hash::Hash;
-use std::iter::FromIterator;
-
-impl<K: backend::Backend> Compile<K> for Predicate<Condition<K>> {
-    fn compile(mut self) -> Filter<K> {
-        self = Predicate::from(self.into_inner().simplify_via_laws());
-        let (mut instructions, jt, jf) = K::return_sequence();
-
-        instructions.extend(self.walk(jt, jf));
-
-        instructions.extend(K::initialization_sequence());
-
-        instructions.reverse();
-        println!("{:?}", instructions);
-
-        Filter::from_iter(instructions)
-    }
-
-    fn into_expr(self) -> Expr<Condition<K>> {
-        self.into_inner()
     }
 }
 

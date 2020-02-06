@@ -1,0 +1,12 @@
+[package]
+name = "bs"
+version = "0.1.0"
+authors = ["Oskar Matzerath <moskar.drummer@gmail.com>"]
+edition = "2018"
+
+[features]
+default = ["bs-filter"]
+
+[dependencies]
+bs-filter = { path = "../bs-filter", version = "0.1", optional=true }
+bs-socket = { path = "../bs-socket", version = "0.1" }

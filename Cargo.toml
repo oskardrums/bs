@@ -2,5 +2,5 @@
 members = [
     "bs-filter", 
     "bs-socket",
-    "bs-examples",
+    "bs",
 ]

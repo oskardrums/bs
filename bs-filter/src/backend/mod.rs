@@ -6,8 +6,10 @@ use crate::ApplyFilter;
 use crate::Result;
 use std::fmt::Debug;
 use std::hash::Hash;
-pub(crate) mod classic;
-//pub(crate) mod extended;
+mod classic;
+//mod extended;
+
+pub use classic::Classic;
 
 pub trait FilterBackend {
     type SocketOption: Debug + ApplyFilter;

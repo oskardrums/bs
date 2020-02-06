@@ -75,3 +75,31 @@ mod tests {
         );
     }
 }
+
+use std::cmp::Ord;
+use crate::backend;
+use crate::Condition;
+use crate::compile::Compile;
+use crate::filter::Filter;
+use std::iter::FromIterator;
+
+impl<K: backend::Backend> Compile<K> for Predicate<Condition<K>> {
+    fn compile(mut self) -> Filter<K> {
+        self = Predicate::from(self.into_inner().simplify_via_laws());
+        let (mut instructions, jt, jf) = K::return_sequence();
+
+        instructions.extend(self.walk(jt, jf));
+
+        instructions.extend(K::initialization_sequence());
+
+        instructions.reverse();
+        println!("{:?}", instructions);
+
+        Filter::from_iter(instructions)
+    }
+
+    fn into_expr(self) -> Expr<Condition<K>> {
+        self.into_inner()
+    }
+}
+

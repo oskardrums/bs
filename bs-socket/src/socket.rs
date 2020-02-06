@@ -89,14 +89,14 @@ impl<S: SocketDesc> Socket<S> {
         unsafe { cvt(fcntl(self.os(), F_GETFD)) }
     }
 
-    fn attach_filter<K: filter::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
+    fn attach_filter<K: filter::backend::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
         let prog: filter::Program<K> = filter.into();
         println!("{:?}", prog);
         let mut opt = prog.build()?;
         opt.apply(self.os())
     }
     // TODO - feature filter
-    pub fn set_filter<K: filter::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
+    pub fn set_filter<K: filter::backend::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
         let drop_filter = filter::Filter::<K>::from_iter(K::contradiction());
         println!("{:?}", drop_filter);
         self.attach_filter(drop_filter)?;
