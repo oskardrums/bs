@@ -1,7 +1,7 @@
 use cvt::cvt;
 use libc::{
-    c_void, close, fcntl, socket, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD,
-    F_SETFL, MSG_DONTWAIT, O_NONBLOCK,
+    c_void, close, fcntl, socket, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, MSG_DONTWAIT,
+    O_NONBLOCK,
 };
 
 use bs_filter as filter;
@@ -97,7 +97,7 @@ impl<S: SocketDesc> Socket<S> {
     }
     // TODO - feature filter
     pub fn set_filter<K: filter::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
-        let drop_filter = filter::Filter::from_iter(K::contradiction());
+        let drop_filter = filter::Filter::<K>::from_iter(K::contradiction());
         println!("{:?}", drop_filter);
         self.attach_filter(drop_filter)?;
         self.drain()?;

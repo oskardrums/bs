@@ -13,7 +13,7 @@ pub enum Comparison {
 
 impl From<u8> for Comparison {
     fn from(value: u8) -> Self {
-        // TODO - rethink this part - maybe mask th input
+        // TODO - rethink this part - maybe mask the input
         match value {
             0x10 => Self::Equal,
             0x20 => Self::GreaterThan,
@@ -26,47 +26,47 @@ impl From<u8> for Comparison {
 
 pub type Value = u32;
 
-use crate::backend::Classic as Kind;
-use crate::Instruction;
 use crate::Result;
 use bpf_sys::*;
-use std::marker::PhantomData;
+
+#[repr(C)]
+#[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd, Default)]
+pub struct Instruction {
+    bytes: [u8; 8],
+}
 
 // BPF_A is missing from bpf_sys
 const BPF_A: u32 = 0x10;
 
-const DROP: Instruction<Kind> = Instruction {
+const DROP: Instruction = Instruction {
     bytes: [(BPF_RET | BPF_K) as _, 0, 0, 0, 0, 0, 0, 0],
-    phantom: PhantomData,
 };
 
-const RETURN_A: Instruction<Kind> = Instruction {
+const RETURN_A: Instruction = Instruction {
     bytes: [(BPF_RET | BPF_A) as _, 0, 0, 0, 0, 0, 0, 0],
-    phantom: PhantomData,
 };
 
-const LOAD_LENGTH: Instruction<Kind> = Instruction {
+const LOAD_LENGTH: Instruction = Instruction {
     bytes: [(BPF_LD | BPF_LEN | BPF_W) as _, 0, 0, 0, 0, 0, 0, 0],
-    phantom: PhantomData,
 };
 
-pub fn initialization_sequence() -> Vec<Instruction<Kind>> {
+pub fn initialization_sequence() -> Vec<Instruction> {
     Default::default()
 }
-pub fn return_sequence() -> (Vec<Instruction<Kind>>, usize, usize) {
+pub fn return_sequence() -> (Vec<Instruction>, usize, usize) {
     (vec![RETURN_A, LOAD_LENGTH, DROP], 1, 2)
 }
-pub fn teotology() -> Vec<Instruction<Kind>> {
+pub fn teotology() -> Vec<Instruction> {
     vec![RETURN_A, LOAD_LENGTH]
 }
-pub fn contradiction() -> Vec<Instruction<Kind>> {
+pub fn contradiction() -> Vec<Instruction> {
     vec![DROP]
 }
 
 #[repr(C)]
 #[derive(Debug)]
 pub struct SocketOption {
-    value: Vec<[u8;8]>,
+    value: Vec<[u8; 8]>,
 }
 #[repr(C)]
 struct SockOpt {
@@ -74,13 +74,13 @@ struct SockOpt {
     val: *mut [u8; 8],
 }
 
-use std::os::unix::io::RawFd;
-use std::mem::size_of_val;
+use crate::ApplyFilter;
 use cvt::cvt;
+use libc::c_void;
 use libc::setsockopt;
 use libc::socklen_t;
-use libc::c_void;
-use crate::ApplyFilter;
+use std::mem::size_of_val;
+use std::os::unix::io::RawFd;
 impl ApplyFilter for SocketOption {
     fn apply(&mut self, fd: RawFd) -> Result<()> {
         let opt = SockOpt {
@@ -92,56 +92,46 @@ impl ApplyFilter for SocketOption {
                 fd,
                 OPTION_LEVEL,
                 OPTION_NAME,
-                &opt as * const _ as * const c_void,
+                &opt as *const _ as *const c_void,
                 size_of_val(&opt) as socklen_t,
             ))
         } {
             Ok(_) => Ok(()),
             Err(e) => Err(e),
         }
-
-
-
     }
 }
 
-pub fn into_socket_option(instructions: Vec<Instruction<Kind>>) -> Result<SocketOption> {
+pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketOption> {
     let mut val = Vec::new();
     for i in instructions {
         val.push(i.bytes)
     }
-    Ok(SocketOption {
-        value: val,
-    })
+    Ok(SocketOption { value: val })
 }
 
 use std::mem::transmute;
 mod operation;
-pub fn jump(
-    comparison: Comparison,
-    operand: Value,
-    jt: usize,
-    jf: usize,
-) -> Vec<Instruction<Kind>> {
+pub fn jump(comparison: Comparison, operand: Value, jt: usize, jf: usize) -> Vec<Instruction> {
     // TODO - implement
     unsafe {
-        vec![transmute::<operation::Operation, Instruction<Kind>>(
+        vec![transmute::<operation::Operation, Instruction>(
             operation::jump(comparison as _, operand, jt, jf),
         )]
     }
 }
 
-pub fn load_u8_at(offset: u32) -> Vec<Instruction<Kind>> {
+pub fn load_u8_at(offset: u32) -> Vec<Instruction> {
     let op = operation::Operation::new((BPF_ABS | BPF_LD | BPF_B) as _, 0, 0, offset);
-    vec![unsafe { transmute::<operation::Operation, Instruction<Kind>>(op) }]
+    vec![unsafe { transmute::<operation::Operation, Instruction>(op) }]
 }
 
-pub fn load_u16_at(offset: u32) -> Vec<Instruction<Kind>> {
+pub fn load_u16_at(offset: u32) -> Vec<Instruction> {
     let op = operation::Operation::new((BPF_ABS | BPF_LD | BPF_H) as _, 0, 0, offset);
-    vec![unsafe { transmute::<operation::Operation, Instruction<Kind>>(op) }]
+    vec![unsafe { transmute::<operation::Operation, Instruction>(op) }]
 }
 
-pub fn load_u32_at(offset: u32) -> Vec<Instruction<Kind>> {
+pub fn load_u32_at(offset: u32) -> Vec<Instruction> {
     let op = operation::Operation::new((BPF_ABS | BPF_LD | BPF_W) as _, 0, 0, offset);
-    vec![unsafe { transmute::<operation::Operation, Instruction<Kind>>(op) }]
+    vec![unsafe { transmute::<operation::Operation, Instruction>(op) }]
 }
