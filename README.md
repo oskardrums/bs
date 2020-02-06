@@ -1,4 +1,7 @@
 # bs
+
+[![Build Status](https://travis-ci.com/oskardrums/bs.svg?token=xiZJWJ821dj7r3DoJgLH&branch=master)](https://travis-ci.com/oskardrums/bs)
+
 better sockets for rust-lang
 XXX
 
