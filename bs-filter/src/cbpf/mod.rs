@@ -26,7 +26,7 @@ impl From<u8> for Comparison {
 
 pub type Value = u32;
 
-use crate::backend::Classic as Kind;
+use crate::backend::classic::Kind;
 use crate::Instruction;
 use crate::Result;
 use bpf_sys::*;
