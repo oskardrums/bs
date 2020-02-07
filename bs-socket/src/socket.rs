@@ -91,14 +91,12 @@ impl<S: SocketDesc> Socket<S> {
 
     fn attach_filter<K: filter::backend::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
         let prog: filter::Program<K> = filter.into();
-        println!("{:?}", prog);
         let mut opt = prog.build()?;
-        opt.apply(self.os())
+        opt.set(self.os())
     }
     // TODO - feature filter
     pub fn set_filter<K: filter::backend::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
         let drop_filter = filter::Filter::<K>::from_iter(K::contradiction());
-        println!("{:?}", drop_filter);
         self.attach_filter(drop_filter)?;
         self.drain()?;
         self.attach_filter(filter)

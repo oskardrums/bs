@@ -4,26 +4,21 @@ pub type ImmArg = u32;
 
 #[repr(C)]
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
-pub struct Operation {
+pub struct Instruction {
     code: Code,
     jt: JumpArg,
     jf: JumpArg,
     k: ImmArg,
 }
 
-impl Operation {
+use std::mem::transmute;
+use std::iter::FromIterator;
+
+impl Instruction {
     pub const fn new(code: Code, jt: JumpArg, jf: JumpArg, k: ImmArg) -> Self {
-        Operation { code, jt, jf, k }
+        Instruction { code, jt, jf, k }
     }
-}
-
-use bpf_sys::*;
-
-pub fn jump(comparison: u8, operand: u32, jt: usize, jf: usize) -> Operation {
-    Operation {
-        code: (BPF_JMP as u8 | comparison | BPF_K as u8) as _,
-        jt: jt as _,
-        jf: jf as _,
-        k: operand as _,
+    pub fn build(self) -> Vec<u8> {
+        Vec::from_iter(transmute::<Self, [u8; 8]>(self).into_iter())
     }
 }
