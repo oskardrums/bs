@@ -1,5 +1,4 @@
 use crate::backend::Backend;
-use crate::Result;
 use std::iter::FromIterator;
 
 #[repr(C)]
@@ -13,8 +12,8 @@ impl<K: Backend> Program<K> {
         Self { filter: ops }
     }
 
-    pub fn build(self) -> Result<K::SocketOption> {
-        K::into_socket_option(self.filter)
+    pub fn build(&mut self) -> Option<K::SocketOption> {
+        K::as_socket_option(&mut self.filter)
     }
 }
 

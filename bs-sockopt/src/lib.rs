@@ -86,6 +86,34 @@ pub(crate) mod errno {
     pub fn errno() -> i32 {
         unsafe { (*errno_location()) as i32 }
     }
+
+
+}
+
+// TODO - PR to cvt/std::io::Result
+#[doc(hidden)]
+pub trait IsMinusOne {
+    fn is_minus_one(&self) -> bool;
+}
+
+macro_rules! impl_is_minus_one {
+    ($($t:ident)*) => ($(impl IsMinusOne for $t {
+        fn is_minus_one(&self) -> bool {
+            *self == -1
+        }
+    })*)
+}
+
+impl_is_minus_one! { i8 i16 i32 i64 isize }
+
+/// like `cvt::cvt`, but uses the more expresive `SocketOptionError`
+/// instead of `std::io::Error`
+pub fn cvt<T: IsMinusOne>(t: T) -> Result<T> {
+    if t.is_minus_one() {
+        Err(SocketOptionError(errno()))
+    } else {
+        Ok(t)
+    }
 }
 
 use errno::errno;
@@ -104,9 +132,9 @@ use std::os::unix::io::RawFd;
 ///
 /// much like `std::io::Error`, this is mostly just a wrapper for `errno`,
 /// but unlike `std::io::Error`, it can
-/// [actually](https://internals.rust-lang.org/t/insufficient-std-io-error/3597) represent every relevant `errno` value
+/// [actually](https://internals.rust-lang.org/t/insufficient-std-io-error/3597) represent every relevant `errno` value 
 #[derive(Debug, PartialEq)]
-pub struct SocketOptionError(i32);
+pub struct SocketOptionError(pub i32);
 
 impl error::Error for SocketOptionError {}
 
@@ -119,7 +147,13 @@ impl fmt::Display for SocketOptionError {
     }
 }
 
-pub(crate) type Result<T> = std::result::Result<T, SocketOptionError>;
+impl From<std::io::Error> for SocketOptionError {
+    fn from(error: std::io::Error) -> Self {
+        SocketOptionError(error.kind() as i32)
+    }
+}
+
+pub type Result<T> = std::result::Result<T, SocketOptionError>;
 
 /// `setsockopt`'s `level` arguments
 #[repr(i32)]
@@ -133,15 +167,24 @@ pub enum Name {
     AttachFilter = SO_ATTACH_FILTER,
 }
 
+use std::hash::Hash;
 /// `sock_filter`
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub struct SocketFilter {
     code: u16,
     jt: u8,
     jf: u8,
     k: u32,
 }
+
+impl SocketFilter {
+    // TODO - make jt, jf, k optional
+    pub const fn new(code: u16, jt: u8, jf: u8, k: u32) -> Self {
+        Self { code, jt, jf, k }
+    }
+}
+
 
 /// `sock_fprog`
 #[repr(C)]
@@ -180,8 +223,8 @@ pub trait SetSocketOption: SocketOption {
                 socket,
                 Self::level() as i32,
                 Self::name() as i32,
-                &self as *const _ as *const c_void,
-                size_of_val(&self) as socklen_t,
+                self as *const _ as *const c_void,
+                size_of_val(self) as socklen_t,
             )
         } {
             0 => Ok(()),

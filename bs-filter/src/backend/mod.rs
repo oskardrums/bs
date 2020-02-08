@@ -2,17 +2,16 @@
 /// represent the relevant backend of BPF operation
 /// (Classic / Extended). This module will be replaced
 /// with an enum when const generics land in stable rust.
-use crate::ApplyFilter;
-use crate::Result;
 use std::fmt::Debug;
 use std::hash::Hash;
+use bs_sockopt::SetSocketOption;
 mod classic;
 //mod extended;
 
 pub use classic::Classic;
 
 pub trait FilterBackend {
-    type SocketOption: Debug + ApplyFilter;
+    type SocketOption: SetSocketOption;
 }
 
 pub trait Backend: Sized + Clone + Ord + Debug + Hash + FilterBackend {
@@ -26,7 +25,7 @@ pub trait Backend: Sized + Clone + Ord + Debug + Hash + FilterBackend {
     fn return_sequence() -> (Vec<Self::Instruction>, usize, usize);
     fn teotology() -> Vec<Self::Instruction>;
     fn contradiction() -> Vec<Self::Instruction>;
-    fn into_socket_option(instructions: Vec<Self::Instruction>) -> Result<Self::SocketOption>;
+    fn as_socket_option(instructions: &mut Vec<Self::Instruction>) -> Option<Self::SocketOption>;
     fn jump(
         comparison: Self::Comparison,
         operand: Self::Value,

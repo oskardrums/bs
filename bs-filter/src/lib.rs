@@ -1,6 +1,6 @@
 pub(crate) mod cbpf;
 pub(crate) mod compile;
-pub(crate) mod ebpf;
+//pub(crate) mod ebpf;
 pub(crate) mod filter;
 pub(crate) mod predicate;
 pub(crate) mod program;
