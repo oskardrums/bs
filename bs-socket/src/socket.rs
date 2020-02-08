@@ -1,18 +1,16 @@
-use cvt::cvt;
 use libc::{
-    c_void, close, fcntl, socket, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, MSG_DONTWAIT,
-    O_NONBLOCK,
+    c_void, close, fcntl, socket, EAGAIN, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD,
+    F_SETFL, MSG_DONTWAIT, O_NONBLOCK,
 };
 
 use bs_filter as filter;
-use filter::ApplyFilter;
 
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 
-use std::io::ErrorKind::{Interrupted, WouldBlock};
-use std::io::Result;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
+
+use bs_sockopt::{cvt, Result, SetSocketOption, SocketOptionError};
 
 pub const PROTO_NULL: i32 = 0_i32;
 pub const IPPROTO_L2TP: i32 = 115_i32;
@@ -77,30 +75,38 @@ impl<S: SocketDesc> Socket<S> {
             Ok(fd) => Ok(Self {
                 inner: S::new(fd as i32),
             }),
-            Err(e) => Err(e),
+            Err(e) => Err(e.into()),
         }
     }
 
     pub fn flags(&self) -> Result<i32> {
-        unsafe { cvt(fcntl(self.os(), F_GETFL)) }
+        unsafe { Ok(cvt(fcntl(self.os(), F_GETFL))?) }
     }
 
     pub fn fd_flags(&self) -> Result<i32> {
-        unsafe { cvt(fcntl(self.os(), F_GETFD)) }
+        unsafe { Ok(cvt(fcntl(self.os(), F_GETFD))?) }
     }
 
-    fn attach_filter<K: filter::backend::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
-        let prog: filter::Program<K> = filter.into();
-        println!("{:?}", prog);
-        let mut opt = prog.build()?;
-        opt.apply(self.os())
+    fn attach_filter<K: filter::backend::Backend>(
+        &mut self,
+        filter: filter::Filter<K>,
+    ) -> Result<()> {
+        let mut prog: filter::Program<K> = filter.into();
+        if let Some(opt) = prog.build() {
+            return opt.set(self.os());
+        } else {
+            // TODO - imlpement
+            unreachable!()
+        }
     }
     // TODO - feature filter
-    pub fn set_filter<K: filter::backend::Backend>(&mut self, filter: filter::Filter<K>) -> Result<()> {
+    pub fn set_filter<K: filter::backend::Backend>(
+        &mut self,
+        filter: filter::Filter<K>,
+    ) -> Result<()> {
         let drop_filter = filter::Filter::<K>::from_iter(K::contradiction());
-        println!("{:?}", drop_filter);
         self.attach_filter(drop_filter)?;
-        self.drain()?;
+        self.drain().unwrap();
         self.attach_filter(filter)
     }
 
@@ -129,12 +135,18 @@ impl<S: SocketDesc> Socket<S> {
         let mut buf = [0; DRAIN_BUFFER_SIZE];
         loop {
             match self.recv(&mut buf, MSG_DONTWAIT) {
+                Err(SocketOptionError(EWOULDBLOCK)) => {
+                    return Ok(());
+                }
+                // rustc claims this branch is unreachable
+                // because it assumes EWOULDBLOCK == EAGAIN == 11
+                // but that's not always the case
+                #[allow(unreachable_patterns)]
+                Err(SocketOptionError(EAGAIN)) => {
+                    return Ok(());
+                }
                 Err(e) => {
-                    if e.kind() == WouldBlock {
-                        return Ok(());
-                    } else {
-                        return Err(e);
-                    }
+                    return Err(e);
                 }
                 Ok(_) => {
                     continue;
@@ -154,19 +166,21 @@ impl<S: SocketDesc> Socket<S> {
         self.set_flags(original_flags | O_NONBLOCK);
         let res = loop {
             match self.recv(&mut buf, 0) {
+                Err(SocketOptionError(EWOULDBLOCK)) => {
+                    return Ok(());
+                }
+                #[allow(unreachable_patterns)]
+                Err(SocketOptionError(EAGAIN)) => {
+                    return Ok(());
+                }
                 Err(e) => {
-                    if e.kind() == WouldBlock {
-                        Ok(())
-                    } else {
-                        Err(e)
-                    }
+                    return Err(e);
                 }
                 Ok(_) => {
                     continue;
                 }
             }
         };
-
         if revert {
             self.set_flags(original_flags);
         }
@@ -179,33 +193,31 @@ impl<S: SocketDesc> Socket<S> {
 
     // TODO - flags to bitflags
     fn set_flags(&mut self, flags: i32) -> Result<()> {
-        match unsafe { cvt(fcntl(self.os(), F_SETFL, flags)) } {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
+        unsafe {
+            cvt(fcntl(self.os(), F_SETFL, flags))
+                .map_err(|e| SocketOptionError::from(e))
+                .and(Ok(()))
         }
     }
 
     // TODO - flags to bitflags
     fn set_fd_flags(&mut self, flags: i32) -> Result<()> {
-        match unsafe { cvt(fcntl(self.os(), F_SETFD, flags)) } {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
+        unsafe {
+            cvt(fcntl(self.os(), F_SETFD, flags))
+                .map_err(|e| SocketOptionError::from(e))
+                .and(Ok(()))
         }
     }
 }
 
+use libc::EINTR;
 impl<S: SocketDesc> Drop for Socket<S> {
     fn drop(&mut self) {
         loop {
             match unsafe { cvt(close(self.inner.os())) } {
                 Ok(_) => return,
-                Err(e) => {
-                    if e.kind() == Interrupted {
-                        continue;
-                    } else {
-                        unreachable!();
-                    }
-                }
+                Err(SocketOptionError(EINTR)) => continue,
+                _ => unreachable!(),
             }
         }
     }

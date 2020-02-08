@@ -8,5 +8,5 @@ edition = "2018"
 
 [dependencies]
 libc = "0.2"
-cvt  = "0.1"
 bs-filter = { path = "../bs-filter", version = "0.1" }
+bs-sockopt = { path = "../bs-sockopt", version = "0.1" }

@@ -1,20 +1,23 @@
 pub(crate) mod cbpf;
 pub(crate) mod compile;
 //pub(crate) mod ebpf;
-pub(crate) mod predicate;
-pub(crate) mod util;
 pub(crate) mod filter;
+pub(crate) mod predicate;
 pub(crate) mod program;
+pub(crate) mod util;
+#[allow(dead_code)]
+pub(crate) mod consts;
 
 pub use compile::Compile;
 pub use filter::Filter;
 pub use predicate::Predicate;
 pub use program::Program;
-pub mod idiom;
 pub mod backend;
+pub mod idiom;
 
 // currently our "custom" Result type is std::io::Result
 pub use std::io::Result;
+//pub type Result<T> = std::result::Result<T, ()>;
 
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd, Default)]
 pub struct Computation<K: backend::Backend> {
@@ -66,10 +69,7 @@ impl<K: backend::Backend> Condition<K> {
     }
 }
 
-use std::os::unix::io::RawFd;
-pub trait ApplyFilter {
-    fn apply(&mut self, fd: RawFd) -> Result<()>;
-}
+
 
 #[cfg(test)]
 mod tests {
