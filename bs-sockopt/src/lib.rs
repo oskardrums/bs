@@ -121,7 +121,7 @@ use libc::c_void;
 use libc::socklen_t;
 use libc::EBADF;
 use libc::SOL_SOCKET;
-use libc::SO_ATTACH_FILTER;
+const SO_ATTACH_FILTER: i32 = 26; // use libc::SO_ATTACH_FILTER;
 use libc::{getsockopt, setsockopt};
 use std::error;
 use std::fmt;

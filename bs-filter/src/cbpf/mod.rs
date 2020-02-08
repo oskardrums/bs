@@ -1,6 +1,6 @@
-use libc::{SOL_SOCKET, SO_ATTACH_FILTER};
+use libc::SOL_SOCKET;
 pub const OPTION_LEVEL: i32 = SOL_SOCKET;
-pub const OPTION_NAME: i32 = SO_ATTACH_FILTER;
+pub const OPTION_NAME: i32 = 26; // SO_ATTACH_FILTER;
 
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 #[repr(u8)]
@@ -30,11 +30,9 @@ impl From<u8> for Comparison {
 
 pub type Value = u32;
 
-use bpf_sys::*;
 
 pub use bs_sockopt::SocketFilter as Instruction;
-// BPF_A is missing from bpf_sys
-const BPF_A: u32 = 0x10;
+use crate::consts::*;
 
 const DROP: Instruction = Instruction::new((BPF_RET | BPF_K) as _, 0, 0, 0);
 const RETURN_A: Instruction = Instruction::new((BPF_RET | BPF_A) as _, 0, 0, 0);

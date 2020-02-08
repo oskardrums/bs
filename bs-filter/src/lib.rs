@@ -5,6 +5,8 @@ pub(crate) mod filter;
 pub(crate) mod predicate;
 pub(crate) mod program;
 pub(crate) mod util;
+#[allow(dead_code)]
+pub(crate) mod consts;
 
 pub use compile::Compile;
 pub use filter::Filter;
