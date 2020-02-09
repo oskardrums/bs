@@ -67,7 +67,7 @@ pub fn jump(comparison: Comparison, operand: u32, jt: usize, jf: usize) -> Vec<I
         (BPF_JMP as u8 | comparison as u8 | BPF_K as u8) as _,
         jt as _,
         jf as _,
-        operand as _,
+        operand,
     )]
 }
 pub fn load_u8_at(offset: u32) -> Vec<Instruction> {

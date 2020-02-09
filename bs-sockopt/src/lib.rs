@@ -24,6 +24,35 @@
 //! * `udp(7)`
 //! * ...
 
+#![deny(
+    bad_style,
+    const_err,
+    dead_code,
+    improper_ctypes,
+    non_shorthand_field_patterns,
+    no_mangle_generic_items,
+    overflowing_literals,
+    path_statements,
+    patterns_in_fns_without_body,
+    private_in_public,
+    unconditional_recursion,
+    unused,
+    unused_allocation,
+    unused_comparisons,
+    unused_parens,
+    while_true,
+    missing_debug_implementations,
+    missing_docs,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_extern_crates,
+    unused_import_braces,
+    unused_qualifications,
+    unused_results,
+    missing_copy_implementations
+)]
+
+
 /// Shamelessly copied from `nix`'s `errno` module
 pub(crate) mod errno {
     use libc::c_int;
@@ -84,7 +113,7 @@ pub(crate) mod errno {
 
     /// Returns the platform-specific value of errno
     pub fn errno() -> i32 {
-        unsafe { (*errno_location()) as i32 }
+        unsafe { *errno_location() }
     }
 
 
@@ -128,12 +157,12 @@ use std::fmt;
 use std::mem::size_of_val;
 use std::os::unix::io::RawFd;
 
-/// `bs-sockopt`'s custom `Error` type, returned by `SocketOption::set`/`get`.
+/// `bs-sockopt`'s custom `Error` type, used as the `Err` variant of `bs-sockopt`'s `Result` type
 ///
 /// much like `std::io::Error`, this is mostly just a wrapper for `errno`,
 /// but unlike `std::io::Error`, it can
 /// [actually](https://internals.rust-lang.org/t/insufficient-std-io-error/3597) represent every relevant `errno` value 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct SocketOptionError(pub i32);
 
 impl error::Error for SocketOptionError {}
@@ -153,17 +182,23 @@ impl From<std::io::Error> for SocketOptionError {
     }
 }
 
+/// `bs-sockopt`'s custom `Result` type, returned by `SocketOption::set`/`get`, etc.
+/// uses `SocketOptionError` as its `Err` variant
 pub type Result<T> = std::result::Result<T, SocketOptionError>;
 
 /// `setsockopt`'s `level` arguments
 #[repr(i32)]
+#[derive(Debug, Copy, Clone)]
 pub enum Level {
+    /// `SOL_SOCKET`
     Socket = SOL_SOCKET,
 }
 
 /// `setsockopt`'s `optname` arguments
 #[repr(i32)]
+#[derive(Debug, Copy, Clone)]
 pub enum Name {
+    /// `SO_ATTACH_FILTER`
     AttachFilter = SO_ATTACH_FILTER,
 }
 
@@ -179,9 +214,15 @@ pub struct SocketFilter {
 }
 
 impl SocketFilter {
-    // TODO - make jt, jf, k optional
+    /// Creates a new `SocketFilter` with the given parameters
     pub const fn new(code: u16, jt: u8, jf: u8, k: u32) -> Self {
         Self { code, jt, jf, k }
+    }
+
+    /// Helper function, creates a new `SocketFilter` with given `code`
+    /// other parameters (`jt`, `jf`, `k` are set to 0)
+    pub const fn from_code(code: u16) -> Self {
+        Self { code, jt: 0, jf: 0, k: 0 }
     }
 }
 
@@ -195,6 +236,7 @@ pub struct SocketFilterProgram {
 }
 
 impl SocketFilterProgram {
+    /// Creates a new `SocketFilterProgram` from the given `SocketFilter` vector
     pub fn from_vector(v: &mut Vec<SocketFilter>) -> Self {
         Self {
             len: v.len() as u16,
@@ -218,12 +260,13 @@ pub trait SetSocketOption: SocketOption {
     /// # Errors
     /// Will rethrow any errors produced by the underlying `setsockopt` call
     fn set(&self, socket: RawFd) -> Result<()> {
+        let ptr: *const Self = self;
         match unsafe {
             setsockopt(
                 socket,
                 Self::level() as i32,
                 Self::name() as i32,
-                self as *const _ as *const c_void,
+                ptr as *const c_void,
                 size_of_val(self) as socklen_t,
             )
         } {
@@ -244,14 +287,15 @@ pub trait GetSocketOption: SocketOption + From<Vec<u8>> {
     // TODO - test GetSocketOption
     fn get(socket: RawFd) -> Result<Self> {
         let mut optlen = size_of::<Self>();
+        let optlen_ptr: *mut usize = &mut optlen;
         let mut new = Vec::<u8>::with_capacity(optlen);
         match unsafe {
             getsockopt(
                 socket,
                 Self::level() as i32,
                 Self::name() as i32,
-                new.as_mut_ptr() as _,
-                &mut optlen as *mut usize as *mut u32,
+                new.as_mut_ptr() as *mut c_void,
+                optlen_ptr as *mut u32,
             )
         } {
             0 => Ok(Self::from(new)),
