@@ -30,7 +30,6 @@
 
 
 pub(crate) mod cbpf;
-pub(crate) mod compile;
 //pub(crate) mod ebpf;
 pub(crate) mod filter;
 pub(crate) mod predicate;
@@ -39,7 +38,6 @@ pub(crate) mod util;
 #[allow(dead_code)]
 pub(crate) mod consts;
 
-pub use compile::Compile;
 pub use filter::Filter;
 pub use predicate::Predicate;
 pub use program::Program;
