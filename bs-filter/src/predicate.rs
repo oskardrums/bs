@@ -55,6 +55,7 @@ impl<K: Backend> Predicate<K> {
         instructions.extend(K::initialization_sequence());
 
         instructions.reverse();
+        // TODO - optimizations
 
         Ok(Filter::from_iter(instructions))
     }

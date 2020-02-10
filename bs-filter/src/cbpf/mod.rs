@@ -44,7 +44,7 @@ pub fn initialization_sequence() -> Vec<Instruction> {
 }
 pub fn return_sequence() -> (Vec<Instruction>, usize, usize) {
     // TODO - undo magic
-    (vec![RETURN_A, LOAD_LENGTH, DROP], 1, 2)
+    (vec![DROP, RETURN_A, LOAD_LENGTH], 0, 2)
 }
 pub fn teotology() -> Vec<Instruction> {
     vec![RETURN_A, LOAD_LENGTH]
