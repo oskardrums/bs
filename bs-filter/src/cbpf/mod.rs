@@ -1,5 +1,5 @@
 use libc::{SOL_SOCKET, EOVERFLOW};
-use bs_sockopt::{Result, SocketOptionError};
+use bs_system::{Result, SystemError};
 pub const OPTION_LEVEL: i32 = SOL_SOCKET;
 pub const OPTION_NAME: i32 = 26; // SO_ATTACH_FILTER;
 
@@ -32,7 +32,7 @@ impl From<u8> for Comparison {
 pub type Value = u32;
 
 
-pub use bs_sockopt::SocketFilter as Instruction;
+pub use bs_system::SocketFilter as Instruction;
 use crate::consts::*;
 
 const DROP: Instruction = Instruction::new((BPF_RET | BPF_K) as _, 0, 0, 0);
@@ -53,12 +53,12 @@ pub fn contradiction() -> Vec<Instruction> {
     vec![DROP]
 }
 
-pub use bs_sockopt::SocketFilterProgram as SocketOption;
+pub use bs_system::SocketFilterProgram as SocketOption;
 
 pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketOption> {
     let len = instructions.len();
     if len > u16::max_value() as usize {
-        return Err(SocketOptionError(EOVERFLOW));
+        return Err(SystemError(EOVERFLOW));
     }
     Ok(SocketOption::from_vector(instructions))
 }

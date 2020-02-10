@@ -1,6 +1,6 @@
 use crate::backend::{Backend, FilterBackend};
 use crate::cbpf;
-use bs_sockopt::Result;
+use bs_system::Result;
 
 /// Phantom struct to represent Classic BPF related
 /// functionalities.

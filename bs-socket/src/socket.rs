@@ -11,7 +11,7 @@ use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
-use bs_sockopt::{cvt, Result, SetSocketOption, SocketOptionError};
+use bs_system::{cvt, Result, SetSocketOption, SystemError};
 
 pub(crate) const PROTO_NULL: i32 = 0_i32;
 // TODO - use this pub(crate) const IPPROTO_L2TP: i32 = 115_i32;
@@ -141,14 +141,14 @@ impl<S: SocketDesc> Socket<S> {
         let mut buf = [0; DRAIN_BUFFER_SIZE];
         loop {
             match self.recv(&mut buf, MSG_DONTWAIT) {
-                Err(SocketOptionError(EWOULDBLOCK)) => {
+                Err(SystemError(EWOULDBLOCK)) => {
                     return Ok(self);
                 }
                 // rustc claims this branch is unreachable
                 // because it assumes EWOULDBLOCK == EAGAIN == 11
                 // but that's not always the case
                 #[allow(unreachable_patterns)]
-                Err(SocketOptionError(EAGAIN)) => {
+                Err(SystemError(EAGAIN)) => {
                     return Ok(self);
                 }
                 Err(e) => {
@@ -172,11 +172,11 @@ impl<S: SocketDesc> Socket<S> {
         self.set_flags(original_flags | O_NONBLOCK);
         let res = loop {
             match self.recv(&mut buf, 0) {
-                Err(SocketOptionError(EWOULDBLOCK)) => {
+                Err(SystemError(EWOULDBLOCK)) => {
                     return Ok(self);
                 }
                 #[allow(unreachable_patterns)]
-                Err(SocketOptionError(EAGAIN)) => {
+                Err(SystemError(EAGAIN)) => {
                     return Ok(self);
                 }
                 Err(e) => {
@@ -202,7 +202,7 @@ impl<S: SocketDesc> Socket<S> {
     fn set_flags(&mut self, flags: i32) -> Result<()> {
         unsafe {
             cvt(fcntl(self.os(), F_SETFL, flags))
-                .map_err(|e| SocketOptionError::from(e))
+                .map_err(|e| SystemError::from(e))
                 .and(Ok(()))
         }
     }
@@ -211,7 +211,7 @@ impl<S: SocketDesc> Socket<S> {
     fn set_fd_flags(&mut self, flags: i32) -> Result<()> {
         unsafe {
             cvt(fcntl(self.os(), F_SETFD, flags))
-                .map_err(|e| SocketOptionError::from(e))
+                .map_err(|e| SystemError::from(e))
                 .and(Ok(()))
         }
     }
@@ -223,7 +223,7 @@ impl<S: SocketDesc> Drop for Socket<S> {
         loop {
             match unsafe { cvt(close(self.inner.os())) } {
                 Ok(_) => return,
-                Err(SocketOptionError(EINTR)) => continue,
+                Err(SystemError(EINTR)) => continue,
                 _ => unreachable!(),
             }
         }
