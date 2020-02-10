@@ -35,7 +35,6 @@
 pub mod filter {
     pub use bs_filter::backend;
     pub use bs_filter::idiom;
-    pub use bs_filter::Compile;
 }
 
 /// Main sockets API
@@ -49,6 +48,7 @@ pub mod socket {
     pub use bs_socket::udp;
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::filter::*;
@@ -56,10 +56,13 @@ mod tests {
 
     #[cfg(all(target_os = "linux", feature = "bs-filter"))]
     #[test]
+    #[allow(unused_results)]
     fn packet_socket_arp_filter() {
         let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
         let p = idiom::ethernet::ether_type_arp::<backend::Classic>();
-        let f = p.compile();
+        println!("{:?}", p);
+        let f = p.compile().unwrap().build().unwrap();
+        println!("{:?}", f);
         s.set_filter(f).unwrap();
     }
 }

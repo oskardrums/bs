@@ -12,10 +12,10 @@ impl SocketDesc for SctpSocket {
         Self { fd }
     }
     fn domain() -> i32 {
-        AF_INET as i32
+        AF_INET
     }
     fn type_() -> i32 {
-        SOCK_SCTP as i32
+        SOCK_SCTP
     }
     fn protocol() -> i32 {
         PROTO_NULL

@@ -229,18 +229,22 @@ impl SocketFilter {
 
 /// `sock_fprog`
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct SocketFilterProgram {
     len: u16,
-    filter: *mut SocketFilter,
+    filter: Box<[SocketFilter]>,
 }
 
 impl SocketFilterProgram {
     /// Creates a new `SocketFilterProgram` from the given `SocketFilter` vector
-    pub fn from_vector(v: &mut Vec<SocketFilter>) -> Self {
+    pub fn from_vector(v: Vec<SocketFilter>) -> Self {
+        let len = v.len() as u16;
+        println!("len: {:?}", len);
+        let filter = v.into_boxed_slice();
+        println!("filter={:?}", filter);
         Self {
-            len: v.len() as u16,
-            filter: v.as_mut_ptr(),
+            len,
+            filter,
         }
     }
 }
@@ -261,13 +265,15 @@ pub trait SetSocketOption: SocketOption {
     /// Will rethrow any errors produced by the underlying `setsockopt` call
     fn set(&self, socket: RawFd) -> Result<()> {
         let ptr: *const Self = self;
+        let len: socklen_t = size_of_val(&self) as socklen_t;
+        println!("this len is {:?}", len);
         match unsafe {
             setsockopt(
                 socket,
                 Self::level() as i32,
                 Self::name() as i32,
                 ptr as *const c_void,
-                size_of_val(self) as socklen_t,
+                16,
             )
         } {
             0 => Ok(()),
@@ -322,7 +328,7 @@ mod tests {
     #[test]
     fn set_sock_fprog_expect_ebadf() {
         let expected = Err(SocketOptionError(EBADF));
-        let prog = SocketFilterProgram::from_vector(&mut Vec::new());
+        let prog = SocketFilterProgram::from_vector(Vec::new());
         assert_eq!(prog.set(-1), expected);
         assert_eq!(prog.set(-321), expected);
         assert_eq!(prog.set(-3214), expected);

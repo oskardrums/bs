@@ -1,19 +1,22 @@
-/// The `backend` module holds phantom structs that
-/// represent the relevant backend of BPF operation
-/// (Classic / Extended). This module will be replaced
-/// with an enum when const generics land in stable rust.
+//! The `backend` module holds phantom structs that
+//! represent the relevant backend of BPF operation
+//! (Classic / Extended). This module will be replaced
+//! with an enum when const generics land in stable rust.
 use std::fmt::Debug;
 use std::hash::Hash;
 use bs_sockopt::SetSocketOption;
+use bs_sockopt::Result;
 mod classic;
 //mod extended;
 
 pub use classic::Classic;
 
+#[doc(hidden)]
 pub trait FilterBackend {
     type SocketOption: SetSocketOption;
 }
 
+#[doc(hidden)]
 pub trait Backend: Sized + Clone + Ord + Debug + Hash + FilterBackend {
     type Comparison: Clone + Ord + Debug + Hash + From<u8>;
     type Value: Clone + Ord + Debug + Hash + From<u32>;
@@ -25,7 +28,7 @@ pub trait Backend: Sized + Clone + Ord + Debug + Hash + FilterBackend {
     fn return_sequence() -> (Vec<Self::Instruction>, usize, usize);
     fn teotology() -> Vec<Self::Instruction>;
     fn contradiction() -> Vec<Self::Instruction>;
-    fn as_socket_option(instructions: &mut Vec<Self::Instruction>) -> Option<Self::SocketOption>;
+    fn into_socket_option(instructions: Vec<Self::Instruction>) -> Result<Self::SocketOption>;
     fn jump(
         comparison: Self::Comparison,
         operand: Self::Value,

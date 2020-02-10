@@ -41,15 +41,20 @@ pub(crate) mod consts;
 pub use filter::Filter;
 pub use predicate::Predicate;
 pub use program::Program;
+
+/// Provides various filtering backends, namely cBPF (`backend::Classic`) and eBPF
+/// (`backend::Extended`)
 pub mod backend;
+
+/// Ready-made filtering packet idioms, ranging from low level (e.g. `offset_equals_*` idioms) to
+/// higher level carefully implemented widely used filters (e.g. `ip_host`)
+///
+/// idioms are implemented as `Predicate`s so they can be freely combined into more sophisticated
+/// and/or specific filters
 pub mod idiom;
 
-// currently our "custom" Result type is std::io::Result
-pub use std::io::Result;
-//pub type Result<T> = std::result::Result<T, ()>;
-
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd, Default)]
-pub struct Computation<K: backend::Backend> {
+pub(crate) struct Computation<K: backend::Backend> {
     instructions: Vec<K::Instruction>,
 }
 
@@ -63,6 +68,7 @@ impl<K: backend::Backend> Computation<K> {
     }
 }
 
+/// XXX
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Condition<K: backend::Backend> {
     computation: Computation<K>,
@@ -71,26 +77,16 @@ pub struct Condition<K: backend::Backend> {
 }
 
 impl<K: backend::Backend> Condition<K> {
-    pub fn new(computation: Computation<K>, comparison: K::Comparison, operand: K::Value) -> Self {
+    /// XXX
+    pub fn new(computation: Vec<K::Instruction>, comparison: K::Comparison, operand: K::Value) -> Self {
         Self {
-            computation,
+            computation: Computation::new(computation),
             comparison,
             operand,
         }
     }
 
-    pub fn computation(self) -> Computation<K> {
-        self.computation
-    }
-
-    pub fn comparison(&self) -> &K::Comparison {
-        &self.comparison
-    }
-
-    pub fn operand(&self) -> &K::Value {
-        &self.operand
-    }
-
+    /// XXX
     pub fn build(self, jt: usize, jf: usize) -> Vec<K::Instruction> {
         let mut res = K::jump(self.comparison, self.operand, jt, jf);
         res.extend(self.computation.build());

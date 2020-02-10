@@ -1,6 +1,8 @@
 use crate::backend::Backend;
 use std::iter::FromIterator;
+use bs_sockopt::Result;
 
+/// BPF Program for filtering packets on a socket
 #[repr(C)]
 #[derive(Debug)]
 pub struct Program<K: Backend> {
@@ -8,12 +10,14 @@ pub struct Program<K: Backend> {
 }
 
 impl<K: Backend> Program<K> {
-    pub fn new(ops: Vec<K::Instruction>) -> Self {
-        Self { filter: ops }
+    /// Creates a new `Program` from the given instructions
+    pub fn new(instructions: Vec<K::Instruction>) -> Self {
+        Self { filter: instructions }
     }
 
-    pub fn build(&mut self) -> Option<K::SocketOption> {
-        K::as_socket_option(&mut self.filter)
+    /// Creates a `SocketOption` referring to this `Program`
+    pub fn build(self) -> Result<K::SocketOption> {
+        K::into_socket_option(self.filter)
     }
 }
 

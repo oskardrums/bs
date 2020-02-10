@@ -1,9 +1,10 @@
-use libc::SOL_SOCKET;
+use libc::{SOL_SOCKET, EOVERFLOW};
+use bs_sockopt::{Result, SocketOptionError};
 pub const OPTION_LEVEL: i32 = SOL_SOCKET;
 pub const OPTION_NAME: i32 = 26; // SO_ATTACH_FILTER;
 
-#[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 #[repr(u8)]
+#[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub enum Comparison {
     Always = 0x00,
     Equal = 0x10,
@@ -54,12 +55,12 @@ pub fn contradiction() -> Vec<Instruction> {
 
 pub use bs_sockopt::SocketFilterProgram as SocketOption;
 
-pub fn as_socket_option(instructions: &mut Vec<Instruction>) -> Option<SocketOption> {
+pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketOption> {
     let len = instructions.len();
     if len > u16::max_value() as usize {
-        return None;
+        return Err(SocketOptionError(EOVERFLOW));
     }
-    Some(SocketOption::from_vector(instructions))
+    Ok(SocketOption::from_vector(instructions))
 }
 
 pub fn jump(comparison: Comparison, operand: u32, jt: usize, jf: usize) -> Vec<Instruction> {

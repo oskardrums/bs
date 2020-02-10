@@ -2,6 +2,8 @@ use crate::socket::SocketDesc;
 use libc::{AF_PACKET, ETH_P_ALL, SOCK_DGRAM, SOCK_RAW};
 use std::os::unix::io::RawFd;
 
+/// Raw layer 2 `packet(7)` socket
+#[derive(Debug, Clone, Copy)]
 pub struct PacketLayer2Socket {
     fd: RawFd,
 }
@@ -11,10 +13,10 @@ impl SocketDesc for PacketLayer2Socket {
         Self { fd }
     }
     fn domain() -> i32 {
-        AF_PACKET as i32
+        AF_PACKET
     }
     fn type_() -> i32 {
-        SOCK_RAW as i32
+        SOCK_RAW
     }
     fn protocol() -> i32 {
         (ETH_P_ALL as u16).to_be() as i32
@@ -24,6 +26,8 @@ impl SocketDesc for PacketLayer2Socket {
     }
 }
 
+/// Raw layer 3 `packet(7)` socket
+#[derive(Debug, Clone, Copy)]
 pub struct PacketLayer3Socket {
     fd: RawFd,
 }
@@ -33,10 +37,10 @@ impl SocketDesc for PacketLayer3Socket {
         Self { fd }
     }
     fn domain() -> i32 {
-        AF_PACKET as i32
+        AF_PACKET
     }
     fn type_() -> i32 {
-        SOCK_DGRAM as i32
+        SOCK_DGRAM
     }
     fn protocol() -> i32 {
         (ETH_P_ALL as u16).to_be() as i32

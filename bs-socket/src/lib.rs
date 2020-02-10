@@ -29,13 +29,16 @@
 )]
 
 
-pub mod packet;
-pub mod raw;
+/// `Socket` struct and implementation
 pub mod socket;
+/// `packet(7)` sockets
+pub mod packet;
+/// `raw(7)` sockets
+pub mod raw;
+/// `tcp(7)` sockets
 pub mod tcp;
+/// `udp(7)` sockets
 pub mod udp;
-
-pub const PROTO_NULL: i32 = 0;
 
 #[cfg(test)]
 mod tests {
@@ -46,15 +49,15 @@ mod tests {
     use super::udp::*;
     use bs_filter::idiom::ethernet::ether_type_arp;
     use bs_filter::backend::Classic;
-    use bs_filter::Compile;
     use libc::SOCK_NONBLOCK;
 
     #[test]
+    #[allow(unused_results)]
     fn set_classic_filter() {
         // UDP is arbitrary here
         let mut s: Socket<UdpSocket> = Socket::new().unwrap();
         let p = ether_type_arp::<Classic>();
-        let f = p.compile();
+        let f = p.compile().unwrap().build().unwrap();
         s.set_filter(f).unwrap();
     }
 

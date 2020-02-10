@@ -1,9 +1,10 @@
 use crate::backend::{Backend, FilterBackend};
 use crate::cbpf;
+use bs_sockopt::Result;
 
 /// Phantom struct to represent Classic BPF related
 /// functionalities.
-#[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Classic {}
 
 impl FilterBackend for Classic {
@@ -33,8 +34,8 @@ impl Backend for Classic {
     fn contradiction() -> Vec<Self::Instruction> {
         cbpf::contradiction()
     }
-    fn as_socket_option(instructions: &mut Vec<Self::Instruction>) -> Option<Self::SocketOption> {
-        cbpf::as_socket_option(instructions)
+    fn into_socket_option(instructions: Vec<Self::Instruction>) -> Result<Self::SocketOption> {
+        cbpf::into_socket_option(instructions)
     }
     fn jump(
         comparison: Self::Comparison,

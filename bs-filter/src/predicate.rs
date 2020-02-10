@@ -13,21 +13,27 @@ use bs_sockopt::Result;
 /// A boolian logic construction of `Condition`s
 /// can be extended via bitwise operation syntax, see example below
 /// ```
+/// # use std::ops::{BitAnd, BitOr};
+/// # use bs_filter::Predicate;
+/// # use bs_filter::backend::Classic;
+/// # use bs_filter::backend::Backend;
+/// # use boolean_expression::Expr::*;
 /// fn do_and() {
 ///     assert_eq!(
 ///         // Predicates can be constructed with `&` to create a new And(...) Predicate
-///         Predicate::from(Const(true)) & Predicate::from(Const(false)),
-///         Predicate::from(And(Box::new(Const(true)), Box::new(Const(false))))
+///         Predicate::<Classic>::from(Const(true)) & Predicate::from(Const(false)),
+///         Predicate::<Classic>::from(And(Box::new(Const(true)), Box::new(Const(false))))
 ///     );
 /// }
 /// 
 /// fn do_or() {
 ///     assert_eq!(
 ///         // the same goes for `|` and Or(...)
-///         Predicate::from(Const(true)) | Predicate::from(Const(false)),
-///         Predicate::from(Or(Box::new(Const(true)), Box::new(Const(false))))
+///         Predicate::<Classic>::from(Const(true)) | Predicate::from(Const(false)),
+///         Predicate::<Classic>::from(Or(Box::new(Const(true)), Box::new(Const(false))))
 ///     );
-/// }```
+/// }
+/// ```
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Predicate<K: Backend> {
     expr: Expr<Condition<K>>,
