@@ -10,7 +10,7 @@ use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
-use bs_sockopt::{cvt, Result, SetSocketOption, SocketOptionError};
+use bs_system::{cvt, Result, SetSocketOption, SocketOptionError};
 
 pub const PROTO_NULL: i32 = 0_i32;
 pub const IPPROTO_L2TP: i32 = 115_i32;

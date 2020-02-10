@@ -10,4 +10,4 @@ edition = "2018"
 boolean_expression  = "0.3"
 eui48               = "0.4"
 libc                = "0.2"
-bs-sockopt          = { version = "0.1", path = "../bs-sockopt" }
+bs-system          = { version = "0.1", path = "../bs-system" }

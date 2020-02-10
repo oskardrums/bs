@@ -86,8 +86,6 @@ pub(crate) mod errno {
     pub fn errno() -> i32 {
         unsafe { (*errno_location()) as i32 }
     }
-
-
 }
 
 // TODO - PR to cvt/std::io::Result
@@ -128,11 +126,11 @@ use std::fmt;
 use std::mem::size_of_val;
 use std::os::unix::io::RawFd;
 
-/// `bs-sockopt`'s custom `Error` type, returned by `SocketOption::set`/`get`.
+/// `bs-system`'s custom `Error` type, returned by `SocketOption::set`/`get`.
 ///
 /// much like `std::io::Error`, this is mostly just a wrapper for `errno`,
 /// but unlike `std::io::Error`, it can
-/// [actually](https://internals.rust-lang.org/t/insufficient-std-io-error/3597) represent every relevant `errno` value 
+/// [actually](https://internals.rust-lang.org/t/insufficient-std-io-error/3597) represent every relevant `errno` value
 #[derive(Debug, PartialEq)]
 pub struct SocketOptionError(pub i32);
 
@@ -185,7 +183,6 @@ impl SocketFilter {
     }
 }
 
-
 /// `sock_fprog`
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -217,19 +214,15 @@ pub trait SetSocketOption: SocketOption {
     /// Calls `setsockopt(2)` to apply `self` to a given `socket`
     /// # Errors
     /// Will rethrow any errors produced by the underlying `setsockopt` call
-    fn set(&self, socket: RawFd) -> Result<()> {
-        match unsafe {
-            setsockopt(
+    fn set(&self, socket: RawFd) -> Result<i32> {
+        unsafe {
+            cvt(setsockopt(
                 socket,
                 Self::level() as i32,
                 Self::name() as i32,
                 self as *const _ as *const c_void,
                 size_of_val(self) as socklen_t,
-            )
-        } {
-            0 => Ok(()),
-            -1 => Err(SocketOptionError(errno())),
-            _ => unreachable!(),
+            ))
         }
     }
 }
