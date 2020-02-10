@@ -17,10 +17,6 @@ arch:
     - amd64
     - arm64
 
-os:
-    - linux
-    - osx
-
 matrix:
     allow_failures:
         - rust: nightly
