@@ -40,7 +40,6 @@ pub(crate) mod consts;
 
 pub use filter::Filter;
 pub use predicate::Predicate;
-pub use program::Program;
 
 /// Provides various filtering backends, namely cBPF (`backend::Classic`) and eBPF
 /// (`backend::Extended`)
@@ -68,17 +67,15 @@ impl<K: backend::Backend> Computation<K> {
     }
 }
 
-/// XXX
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
-pub struct Condition<K: backend::Backend> {
+pub(crate) struct Condition<K: backend::Backend> {
     computation: Computation<K>,
     comparison: K::Comparison,
     operand: K::Value,
 }
 
 impl<K: backend::Backend> Condition<K> {
-    /// XXX
-    pub fn new(computation: Vec<K::Instruction>, comparison: K::Comparison, operand: K::Value) -> Self {
+    pub(crate) fn new(computation: Vec<K::Instruction>, comparison: K::Comparison, operand: K::Value) -> Self {
         Self {
             computation: Computation::new(computation),
             comparison,
@@ -86,15 +83,12 @@ impl<K: backend::Backend> Condition<K> {
         }
     }
 
-    /// XXX
-    pub fn build(self, jt: usize, jf: usize) -> Vec<K::Instruction> {
+    pub(crate) fn build(self, jt: usize, jf: usize) -> Vec<K::Instruction> {
         let mut res = K::jump(self.comparison, self.operand, jt, jf);
         res.extend(self.computation.build());
         res
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

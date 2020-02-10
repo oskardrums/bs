@@ -3,7 +3,7 @@ use libc::ETH_P_ARP;
 
 /// true iff packet's ethernet type is `ether_type`
 pub fn ether_type<K: Backend>(ether_type: u16) -> Predicate<K> {
-    Predicate::from(Terminal(util::ether_type(ether_type)))
+    Predicate::from_inner(Terminal(util::ether_type(ether_type)))
 }
 /// accept only ARP packets
 pub fn ether_type_arp<K: Backend>() -> Predicate<K> {
