@@ -8,5 +8,5 @@ edition = "2018"
 default = ["bs-filter"]
 
 [dependencies]
-bs-filter = { path = "../bs-filter", version = "0.1", optional=true }
+bs-filter = { path = "../bs-filter", version = "0.1", optional = true }
 bs-socket = { path = "../bs-socket", version = "0.1" }

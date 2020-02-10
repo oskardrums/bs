@@ -23,13 +23,13 @@ pub fn mac_to_u32_and_u16(mac: MacAddress) -> (u32, u16) {
     }
 }
 
-use crate::{backend::Backend, Computation, Condition};
+use crate::{backend::Backend, Condition};
 use crate::consts::BPF_JEQ;
 
 #[allow(dead_code)]
-pub fn ether_type<K: Backend>(ether_type: u16) -> Condition<K> {
+pub(crate) fn ether_type<K: Backend>(ether_type: u16) -> Condition<K> {
     Condition::new(
-        Computation::new(K::load_u16_at(OFFSET_ETHER_TYPE as _)),
+        K::load_u16_at(OFFSET_ETHER_TYPE as _),
         K::Comparison::from(BPF_JEQ as u8),
         K::Value::from(ether_type as u32),
     )
