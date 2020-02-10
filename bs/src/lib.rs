@@ -88,4 +88,17 @@ mod tests {
         let f = p.compile().unwrap().build().unwrap();
         let _ = s.set_filter(f).unwrap();
     }
+
+    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[test]
+    fn packet_socket_ip_host() {
+        init();
+        let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
+        let p =
+            idiom::ip::ip_host::<backend::Classic>("1.1.1.1".parse().unwrap());
+        let f = p.compile().unwrap().build().unwrap();
+        let _ = s.set_filter(f).unwrap();
+//      let mut buf: [u8;1024] = [0;1024];
+//      let _ = s.recv(&mut buf, 0);
+    }
 }

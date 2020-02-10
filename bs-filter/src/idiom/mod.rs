@@ -1,5 +1,7 @@
-/// ethernet layer filtering idioms
+/// Ethernet layer filtering idioms
 pub mod ethernet;
+/// IP layer filtering idioms
+pub mod ip;
 /*
 pub fn ip_dst<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {
     Predicate::from(And(
