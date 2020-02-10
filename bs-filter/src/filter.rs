@@ -1,10 +1,20 @@
 use crate::backend::Backend;
 use crate::program::Program;
 use std::iter::FromIterator;
+use bs_sockopt::Result;
 
+/// A concrete appicable socket filter
 #[derive(Debug)]
 pub struct Filter<K: Backend> {
     inner: Vec<K::Instruction>,
+}
+
+impl<K: Backend> Filter<K> {
+    /// Transform the `Filter` into a `SocketOption` settable on a `Socket`
+    pub fn build(self) -> Result<K::SocketOption> {
+        let prog: Program<K> = self.into(); 
+        prog.build()
+    }
 }
 
 impl<K: Backend> FromIterator<K::Instruction> for Filter<K> {

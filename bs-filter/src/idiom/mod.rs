@@ -1,3 +1,4 @@
+/// ethernet layer filtering idioms
 pub mod ethernet;
 /*
 pub fn ip_dst<B: ConditionBuilder>(ip: Ipv4Addr) -> Predicate<B::Condition> {

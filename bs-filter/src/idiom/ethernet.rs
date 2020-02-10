@@ -1,10 +1,11 @@
-use crate::{backend::Backend, predicate::Expr::*, predicate::Predicate, util, Condition};
+use crate::{backend::Backend, predicate::Expr::*, predicate::Predicate, util};
 use libc::ETH_P_ARP;
 
-pub fn ether_type<K: Backend>(ether_type: u16) -> Predicate<Condition<K>> {
-    Predicate::from(Terminal(util::ether_type(ether_type)))
+/// true iff packet's ethernet type is `ether_type`
+pub fn ether_type<K: Backend>(ether_type: u16) -> Predicate<K> {
+    Predicate::from_inner(Terminal(util::ether_type(ether_type)))
 }
-
-pub fn ether_type_arp<K: Backend>() -> Predicate<Condition<K>> {
+/// accept only ARP packets
+pub fn ether_type_arp<K: Backend>() -> Predicate<K> {
     ether_type(ETH_P_ARP as u16)
 }
