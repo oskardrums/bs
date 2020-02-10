@@ -60,9 +60,7 @@ mod tests {
     fn packet_socket_arp_filter() {
         let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
         let p = idiom::ethernet::ether_type_arp::<backend::Classic>();
-        println!("{:?}", p);
         let f = p.compile().unwrap().build().unwrap();
-        println!("{:?}", f);
         s.set_filter(f).unwrap();
     }
 }

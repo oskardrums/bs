@@ -52,7 +52,6 @@
     missing_copy_implementations
 )]
 
-
 /// Shamelessly copied from `nix`'s `errno` module
 pub(crate) mod errno {
     use libc::c_int;
@@ -115,8 +114,6 @@ pub(crate) mod errno {
     pub fn errno() -> i32 {
         unsafe { *errno_location() }
     }
-
-
 }
 
 // TODO - PR to cvt/std::io::Result
@@ -154,14 +151,14 @@ const SO_ATTACH_FILTER: i32 = 26; // use libc::SO_ATTACH_FILTER;
 use libc::{getsockopt, setsockopt};
 use std::error;
 use std::fmt;
-use std::mem::size_of_val;
+//use std::mem::size_of_val;
 use std::os::unix::io::RawFd;
 
 /// `bs-sockopt`'s custom `Error` type, used as the `Err` variant of `bs-sockopt`'s `Result` type
 ///
 /// much like `std::io::Error`, this is mostly just a wrapper for `errno`,
 /// but unlike `std::io::Error`, it can
-/// [actually](https://internals.rust-lang.org/t/insufficient-std-io-error/3597) represent every relevant `errno` value 
+/// [actually](https://internals.rust-lang.org/t/insufficient-std-io-error/3597) represent every relevant `errno` value
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct SocketOptionError(pub i32);
 
@@ -222,10 +219,14 @@ impl SocketFilter {
     /// Helper function, creates a new `SocketFilter` with given `code`
     /// other parameters (`jt`, `jf`, `k` are set to 0)
     pub const fn from_code(code: u16) -> Self {
-        Self { code, jt: 0, jf: 0, k: 0 }
+        Self {
+            code,
+            jt: 0,
+            jf: 0,
+            k: 0,
+        }
     }
 }
-
 
 /// `sock_fprog`
 #[repr(C)]
@@ -239,13 +240,8 @@ impl SocketFilterProgram {
     /// Creates a new `SocketFilterProgram` from the given `SocketFilter` vector
     pub fn from_vector(v: Vec<SocketFilter>) -> Self {
         let len = v.len() as u16;
-        println!("len: {:?}", len);
         let filter = v.into_boxed_slice();
-        println!("filter={:?}", filter);
-        Self {
-            len,
-            filter,
-        }
+        Self { len, filter }
     }
 }
 
@@ -256,6 +252,9 @@ pub trait SocketOption: Sized {
 
     /// Returns a `Name` to be passed to `set/getsockopt(2)`
     fn name() -> Name;
+
+    /// binary size, used as the `optlen` argument for `set/getsockopt(2)`
+    fn optlen(&self) -> socklen_t;
 }
 
 /// Extension trait for a settable `SocketOption`
@@ -265,15 +264,13 @@ pub trait SetSocketOption: SocketOption {
     /// Will rethrow any errors produced by the underlying `setsockopt` call
     fn set(&self, socket: RawFd) -> Result<()> {
         let ptr: *const Self = self;
-        let len: socklen_t = size_of_val(&self) as socklen_t;
-        println!("this len is {:?}", len);
         match unsafe {
             setsockopt(
                 socket,
                 Self::level() as i32,
                 Self::name() as i32,
                 ptr as *const c_void,
-                16,
+                self.optlen(),
             )
         } {
             0 => Ok(()),
@@ -317,6 +314,15 @@ impl SocketOption for SocketFilterProgram {
     }
     fn name() -> Name {
         Name::AttachFilter
+    }
+    fn optlen(&self) -> socklen_t {
+        // XXX - here be dragons
+        #[repr(C)]
+        struct S {
+            len: u16,
+            filter: *mut SocketFilter,
+        }
+        size_of::<S>() as socklen_t
     }
 }
 

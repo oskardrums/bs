@@ -109,9 +109,7 @@ impl<S: SocketDesc> Socket<S> {
         let f = filter::Filter::<filter::backend::Classic>::from_iter(
             filter::backend::Classic::contradiction(),
         );
-        println!("f={:?}", f);
         let drop_filter = f.build()?;
-        println!("drop_filter={:?}", drop_filter);
         self.set_option(drop_filter)?.drain()?.set_option(filter)
     }
 

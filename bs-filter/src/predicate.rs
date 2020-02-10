@@ -50,7 +50,6 @@ impl<K: Backend> Predicate<K> {
         instructions.extend(K::initialization_sequence());
 
         instructions.reverse();
-        println!("{:?}", instructions);
 
         Ok(Filter::from_iter(instructions))
     }

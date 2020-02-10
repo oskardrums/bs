@@ -13,7 +13,6 @@ impl<K: Backend> Filter<K> {
     /// Transform the `Filter` into a `SocketOption` settable on a `Socket`
     pub fn build(self) -> Result<K::SocketOption> {
         let prog: Program<K> = self.into(); 
-        println!("{:?}", prog);
         prog.build()
     }
 }
