@@ -1,6 +1,6 @@
 use crate::backend::Backend;
 use std::iter::FromIterator;
-use bs_sockopt::Result;
+use bs_system::Result;
 
 /// BPF Program for filtering packets on a socket
 #[repr(C)]

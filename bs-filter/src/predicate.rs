@@ -4,7 +4,7 @@ use crate::Condition;
 pub use boolean_expression::Expr;
 pub use boolean_expression::BDD;
 pub use boolean_expression::Expr::*;
-use bs_sockopt::Result;
+use bs_system::Result;
 use std::cmp::Ord;
 use std::fmt::Debug;
 use std::hash::Hash;

@@ -1,7 +1,7 @@
 use crate::backend::Backend;
 use crate::program::Program;
 use std::iter::FromIterator;
-use bs_sockopt::Result;
+use bs_system::Result;
 
 /// A concrete appicable socket filter
 #[derive(Debug)]

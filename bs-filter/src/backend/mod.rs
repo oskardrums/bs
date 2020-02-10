@@ -4,8 +4,8 @@
 //! with an enum when const generics land in stable rust.
 use std::fmt::Debug;
 use std::hash::Hash;
-use bs_sockopt::SetSocketOption;
-use bs_sockopt::Result;
+use bs_system::SetSocketOption;
+use bs_system::Result;
 mod classic;
 //mod extended;
 

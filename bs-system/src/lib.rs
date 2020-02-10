@@ -132,11 +132,11 @@ macro_rules! impl_is_minus_one {
 
 impl_is_minus_one! { i8 i16 i32 i64 isize }
 
-/// like `cvt::cvt`, but uses the more expresive `SocketOptionError`
+/// like `cvt::cvt`, but uses the more expresive `SystemError`
 /// instead of `std::io::Error`
 pub fn cvt<T: IsMinusOne>(t: T) -> Result<T> {
     if t.is_minus_one() {
-        Err(SocketOptionError(errno()))
+        Err(SystemError(errno()))
     } else {
         Ok(t)
     }
@@ -160,11 +160,11 @@ use std::os::unix::io::RawFd;
 /// but unlike `std::io::Error`, it can
 /// [actually](https://internals.rust-lang.org/t/insufficient-std-io-error/3597) represent every relevant `errno` value
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub struct SocketOptionError(pub i32);
+pub struct SystemError(pub i32);
 
-impl error::Error for SocketOptionError {}
+impl error::Error for SystemError {}
 
-impl fmt::Display for SocketOptionError {
+impl fmt::Display for SystemError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
             EBADF => write!(f, "Bad file descriptor"),
@@ -173,15 +173,15 @@ impl fmt::Display for SocketOptionError {
     }
 }
 
-impl From<std::io::Error> for SocketOptionError {
+impl From<std::io::Error> for SystemError {
     fn from(error: std::io::Error) -> Self {
-        SocketOptionError(error.kind() as i32)
+        SystemError(error.kind() as i32)
     }
 }
 
 /// `bs-sockopt`'s custom `Result` type, returned by `SocketOption::set`/`get`, etc.
-/// uses `SocketOptionError` as its `Err` variant
-pub type Result<T> = std::result::Result<T, SocketOptionError>;
+/// uses `SystemError` as its `Err` variant
+pub type Result<T> = std::result::Result<T, SystemError>;
 
 /// `setsockopt`'s `level` arguments
 #[repr(i32)]
@@ -298,7 +298,7 @@ pub trait GetSocketOption: SocketOption + From<Vec<u8>> {
             )
         } {
             0 => Ok(Self::from(new)),
-            -1 => Err(SocketOptionError(errno())),
+            -1 => Err(SystemError(errno())),
             _ => unreachable!(),
         }
     }
@@ -329,7 +329,7 @@ mod tests {
     use super::*;
     #[test]
     fn set_sock_fprog_expect_ebadf() {
-        let expected = Err(SocketOptionError(EBADF));
+        let expected = Err(SystemError(EBADF));
         let prog = SocketFilterProgram::from_vector(Vec::new());
         assert_eq!(prog.set(-1), expected);
         assert_eq!(prog.set(-321), expected);
