@@ -7,7 +7,7 @@ use std::hash::Hash;
 use bs_system::SetSocketOption;
 use bs_system::Result;
 mod classic;
-//mod extended;
+mod extended;
 
 pub use classic::Classic;
 

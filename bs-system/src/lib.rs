@@ -147,15 +147,16 @@ use libc::c_void;
 use libc::socklen_t;
 use libc::EBADF;
 use libc::SOL_SOCKET;
-const SO_ATTACH_FILTER: i32 = 26; // SO_ATTACH_FILTER;
-use libc::{getsockopt, setsockopt};
+//use libc::{getsockopt, setsockopt};
+use libc::setsockopt;
+use log::debug;
 use std::error;
 use std::fmt;
-//use std::mem::size_of_val;
-use std::os::unix::io::RawFd;
 use std::fmt::Debug;
-
-use log::debug;
+use std::hash::Hash;
+use std::mem::size_of;
+use std::mem::size_of_val;
+use std::os::unix::io::RawFd;
 
 /// `bs-system`'s custom `Error` type, returned by `SocketOption::set`/`get`.
 ///
@@ -199,10 +200,12 @@ pub enum Level {
 #[derive(Debug, Copy, Clone)]
 pub enum Name {
     /// `SO_ATTACH_FILTER`
-    AttachFilter = SO_ATTACH_FILTER,
+    AttachFilter = 26,
+
+    /// `SO_ATTACH_BPF`
+    AttachBpf = 50,
 }
 
-use std::hash::Hash;
 /// `sock_filter`
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
@@ -220,7 +223,7 @@ impl SocketFilter {
     }
 
     /// Helper function, creates a new `SocketFilter` with given `code`
-    /// other parameters (`jt`, `jf`, `k` are set to 0)
+    /// other parameters (`jt`, `jf`, `k`) are set to 0
     pub const fn from_code(code: u16) -> Self {
         Self {
             code,
@@ -231,20 +234,66 @@ impl SocketFilter {
     }
 }
 
-/// `sock_fprog`
+/// `sock_filter`
 #[repr(C)]
-#[derive(Debug, Clone)]
-pub struct SocketFilterProgram {
-    len: u16,
-    filter: Box<[SocketFilter]>,
+#[derive(Debug, Default, Copy, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
+pub struct BpfInstruction {
+    code: u8,
+    // Rust bitflags are no fun
+    regs: u8,
+    off: i16,
+    imm: i32,
 }
 
-impl SocketFilterProgram {
-    /// Creates a new `SocketFilterProgram` from the given `SocketFilter` vector
-    pub fn from_vector(v: Vec<SocketFilter>) -> Self {
-        let len = v.len() as u16;
-        let filter = v.into_boxed_slice();
-        Self { len, filter }
+#[doc(hidden)]
+#[repr(u8)]
+#[derive(Debug, Copy, Clone)]
+pub enum BpfRegister {
+    Ret = 0,
+    Context = 1,
+    Arg1 = 2,
+    Arg2 = 3,
+    Arg3 = 4,
+    Arg4 = 5,
+    Packet = 6,
+    Gen1 = 7,
+    Gen2 = 8,
+    Gen3 = 9,
+    FramePointer = 10,
+}
+
+impl BpfRegister {
+    #[doc(hidden)]
+    #[allow(non_upper_case_globals)]
+    pub const None: Self = Self::Ret;
+}
+
+impl BpfInstruction {
+    /// Creates a new `BpfInstruction` with the given parameters
+    pub const fn new(
+        code: u8,
+        dst_reg: BpfRegister,
+        src_reg: BpfRegister,
+        off: i16,
+        imm: i32,
+    ) -> Self {
+        Self {
+            code,
+            regs: ((dst_reg as u8) << 4) | src_reg as u8,
+            off,
+            imm,
+        }
+    }
+
+    /// Helper function, creates a new `BpfInstruction` with given `code`
+    /// other parameters (registers, `off`, `imm`) are set to 0
+    pub const fn from_code(code: u8) -> Self {
+        Self {
+            code,
+            regs: 0,
+            off: 0,
+            imm: 0,
+        }
     }
 }
 
@@ -266,9 +315,10 @@ pub trait SetSocketOption: SocketOption {
     /// # Errors
     /// Will rethrow any errors produced by the underlying `setsockopt` call
     fn set(&self, socket: RawFd) -> Result<i32> {
-
         debug!("setting option {:?} on socket {:?}", self, socket);
+
         let ptr: *const Self = self;
+
         unsafe {
             cvt(setsockopt(
                 socket,
@@ -281,7 +331,7 @@ pub trait SetSocketOption: SocketOption {
     }
 }
 
-use std::mem::size_of;
+/* TODO - rethink this
 /// Extension trait for a gettable `SocketOption`
 pub trait GetSocketOption: SocketOption + From<Vec<u8>> {
     /// Calls `getsockopt(2)` to retrieve a `SocktOption` of the given socket.
@@ -289,23 +339,40 @@ pub trait GetSocketOption: SocketOption + From<Vec<u8>> {
     /// # Errors
     /// Will rethrow any errors produced by the underlying `getsockopt` call
     // TODO - test GetSocketOption
+    //
     fn get(socket: RawFd) -> Result<Self> {
         let mut optlen = size_of::<Self>();
         let optlen_ptr: *mut usize = &mut optlen;
         let mut new = Vec::<u8>::with_capacity(optlen);
-        match unsafe {
-            getsockopt(
+
+        unsafe {
+            cvt(getsockopt(
                 socket,
                 Self::level() as i32,
                 Self::name() as i32,
                 new.as_mut_ptr() as *mut c_void,
                 optlen_ptr as *mut u32,
-            )
-        } {
-            0 => Ok(Self::from(new)),
-            -1 => Err(SystemError(errno())),
-            _ => unreachable!(),
-        }
+            ));
+        };
+        Ok(new)
+    }
+}
+*/
+
+/// `sock_fprog`
+#[repr(C)]
+#[derive(Debug, Clone)]
+pub struct SocketFilterProgram {
+    len: u16,
+    filter: Box<[SocketFilter]>,
+}
+
+impl SocketFilterProgram {
+    /// Creates a new `SocketFilterProgram` from the given `SocketFilter` vector
+    pub fn from_vector(v: Vec<SocketFilter>) -> Self {
+        let len = v.len() as u16;
+        let filter = v.into_boxed_slice();
+        Self { len, filter }
     }
 }
 
@@ -328,6 +395,27 @@ impl SocketOption for SocketFilterProgram {
 }
 
 impl SetSocketOption for SocketFilterProgram {}
+
+/// File descriptor referring to a loaded and verified (e)BPF socket filter
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct SocketFilterFd {
+    fd: RawFd,
+}
+
+impl SocketOption for SocketFilterFd {
+    fn level() -> Level {
+        Level::Socket
+    }
+    fn name() -> Name {
+        Name::AttachBpf
+    }
+    fn optlen(&self) -> socklen_t {
+        size_of_val(self) as socklen_t
+    }
+}
+
+impl SetSocketOption for SocketFilterFd {}
 
 #[cfg(test)]
 mod tests {

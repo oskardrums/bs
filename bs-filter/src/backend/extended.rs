@@ -1,13 +1,11 @@
 use crate::ebpf;
 use crate::backend::{Backend, FilterBackend};
-use crate::{Instruction, Result};
+use bs_system::Result;
 
 /// Phantom struct to represent Extended BPF related
 /// functionalities.
 #[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
-pub(crate) struct Extended {}
-
-pub(crate) type Kind = Extended;
+pub struct Extended {}
 
 impl FilterBackend for Extended {
     type SocketOption = ebpf::SocketOption;
@@ -16,6 +14,7 @@ impl FilterBackend for Extended {
 impl Backend for Extended {
     type Comparison = ebpf::Comparison;
     type Value = ebpf::Value;
+    type Instruction = ebpf::Instruction;
 
     fn option_level() -> i32 {
         ebpf::OPTION_LEVEL
