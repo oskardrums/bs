@@ -247,7 +247,7 @@ pub struct BpfInstruction {
 
 #[doc(hidden)]
 #[repr(u8)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum BpfRegister {
     Ret = 0,
     Context = 1,
@@ -255,7 +255,7 @@ pub enum BpfRegister {
     Arg2 = 3,
     Arg3 = 4,
     Arg4 = 5,
-    Packet = 6,
+    SocketBuffer = 6,
     Gen1 = 7,
     Gen2 = 8,
     Gen3 = 9,

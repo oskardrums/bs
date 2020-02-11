@@ -28,7 +28,6 @@
     missing_copy_implementations
 )]
 
-
 pub(crate) mod cbpf;
 pub(crate) mod ebpf;
 pub(crate) mod filter;
