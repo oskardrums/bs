@@ -34,3 +34,24 @@ pub const BPF_JSET: i32 = 0x40;
 pub const BPF_K: i32 = 0x00;
 pub const BPF_X: i32 = 0x08;
 pub const BPF_A: i32 = 0x10;
+
+pub const OFFSET_ETHER_DST: u32 = 0;
+pub const OFFSET_ETHER_SRC: u32 = 6;
+pub const OFFSET_ETHER_TYPE: u32 = 12;
+pub const SIZE_ETHER_HEADER: u32 = 14;
+
+pub const OFFSET_IP4_TTL: u32 = 8;
+pub const OFFSET_IP4_PROTO: u32 = 9;
+pub const OFFSET_IP4_SRC: u32 = 12;
+pub const OFFSET_IP4_DST: u32 = 16;
+
+pub const OFFSET_IP6_NEXT_HEADER: u32 = 6;
+pub const OFFSET_IP6_HOP_LIMIT: u32 = 7;
+pub const OFFSET_IP6_SRC: u32 = 8;
+pub const OFFSET_IP6_DST: u32 = 24;
+
+pub const ETH_P_IP: u32 = 0x0800;
+pub const ETH_P_ARP: u32 = 0x0806;
+pub const ETH_P_IPV6: u32 = 0x86DD;
+pub const ETH_P_LLDP: u32 = 0x88CC;
+pub const ETH_P_8021Q: u32 = 0x8100;
