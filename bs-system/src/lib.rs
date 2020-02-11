@@ -149,6 +149,7 @@ use libc::EBADF;
 use libc::SOL_SOCKET;
 //use libc::{getsockopt, setsockopt};
 use libc::setsockopt;
+use libc::bpf;
 use log::debug;
 use std::error;
 use std::fmt;
@@ -358,6 +359,60 @@ pub trait GetSocketOption: SocketOption + From<Vec<u8>> {
     }
 }
 */
+
+/// `sock_fprog`
+#[repr(C)]
+#[derive(Debug, Clone)]
+pub struct SocketFilterBpfAttribute {
+    program_type: u32,
+    instructions_count: u32,
+    instructions: Box<[BpfInstruction]>,
+    license: &'static str,
+    log_level: u32,
+    log_size: u32,
+    log_buffer: Vec<u8>,
+    kernel_version: u32,
+}
+
+const BPF_PROG_TYPE_SOCKET_FILTER: u32 = 1;
+
+// XXX - implement bpf(2) ... :-(
+
+impl SocketFilterBpfAttribute {
+    /// Creates a new `SocketFilterBpfAttribute` from the given `BpfInstruction` vector
+    pub fn from_vector(v: Vec<BpfInstruction>) -> Self {
+        let program_type = BPF_PROG_TYPE_SOCKET_FILTER;
+        let instructions_count = v.len() as u32;
+        let instructions = v.into_boxed_slice();
+        let license = "GPL";
+        let log_level = 0;
+        let log_size = 0;
+        let log_buffer = Vec::default();
+        let kernel_version = 0;
+        Self {
+            program_type,
+            instructions_count,
+            instructions,
+            license,
+            log_level,
+            log_size,
+            log_buffer,
+            kernel_version,
+        }
+    }
+
+    pub fn load(self) -> Result<SocketFilterFd> {
+        unsafe {
+            cvt(bpf(
+                socket,
+                Self::level() as i32,
+                Self::name() as i32,
+                ptr as *const c_void,
+                self.optlen(),
+            ))
+        }
+    }
+}
 
 /// `sock_fprog`
 #[repr(C)]
