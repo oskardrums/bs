@@ -1,42 +1,50 @@
 use crate::backend::Backend;
-use crate::consts::BPF_JEQ;
-use crate::predicate::{Expr::*, Predicate};
+use crate::predicate::Predicate;
 use crate::util::Ipv4Addr;
 use crate::util::{OFFSET_IP_DST, OFFSET_IP_SRC, OFFSET_IP_PROTO};
-use crate::Condition;
 use crate::idiom::ethernet::ether_type_ip4;
+use crate::idiom::shift_offset_equals_u8;
+use crate::idiom::shift_offset_equals_u32;
+
+/// true iff packet's IP protocol field is `proto`, assuming IP layer starts at offset `shift`
+pub fn shift_ip_proto<K: Backend>(proto: u8, shift: u32) -> Predicate<K> {
+    shift_offset_equals_u8(OFFSET_IP_PROTO, proto, shift)
+}
 
 /// true iff packet's IP protocol field is `proto`
 pub fn ip_proto<K: Backend>(proto: u8) -> Predicate<K> {
-    Predicate::from_inner(Terminal(Condition::new(
-        K::load_u8_at(OFFSET_IP_PROTO),
-        K::Comparison::from(BPF_JEQ as u8),
-        K::Value::from(proto as u32),
-    )))
+    shift_ip_proto(proto, 0)
+}
 
+/// true iff IP source is `ip`, assuming IP layer starts at offset `shift`
+pub fn shift_ip_src<K: Backend>(ip: Ipv4Addr, shift: u32) -> Predicate<K> {
+    shift_offset_equals_u32(OFFSET_IP_SRC, ip.into(), shift)
 }
 
 /// true iff IP source is `ip`
 pub fn ip_src<K: Backend>(ip: Ipv4Addr) -> Predicate<K> {
     ether_type_ip4() &
-    Predicate::from_inner(Terminal(Condition::new(
-        K::load_u32_at(OFFSET_IP_SRC),
-        K::Comparison::from(BPF_JEQ as u8),
-        K::Value::from(ip.into()),
-    )))
+    shift_ip_src(ip, 0)
+}
+
+/// true iff IP destination is `ip`, assuming IP layer starts at offset `shift`
+pub fn shift_ip_dst<K: Backend>(ip: Ipv4Addr, shift: u32) -> Predicate<K> {
+    shift_offset_equals_u32(OFFSET_IP_DST, ip.into(), shift)
 }
 
 /// true iff IP destination is `ip`
 pub fn ip_dst<K: Backend>(ip: Ipv4Addr) -> Predicate<K> {
     ether_type_ip4() &
-    Predicate::from_inner(Terminal(Condition::new(
-        K::load_u32_at(OFFSET_IP_DST),
-        K::Comparison::from(BPF_JEQ as u8),
-        K::Value::from(ip.into()),
-    )))
+    shift_ip_dst(ip, 0)
 }
+
+/// true iff either IP destination or source is `ip`, assuming IP layer starts at offset `shift`
+pub fn shift_ip_host<K: Backend>(ip: Ipv4Addr, shift: u32) -> Predicate<K> {
+    shift_ip_src(ip, shift) | shift_ip_dst(ip, shift)
+}
+
 
 /// true iff `ip` is either IP source or destination
 pub fn ip_host<K: Backend>(ip: Ipv4Addr) -> Predicate<K> {
-    ip_src(ip) | ip_dst(ip)
+    shift_ip_host(ip, 0)
 }
