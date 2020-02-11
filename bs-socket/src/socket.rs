@@ -110,7 +110,9 @@ impl<S: SocketDesc> Socket<S> {
             filter::backend::Classic::contradiction(),
         );
         let drop_filter = f.build()?;
-        self.set_option(drop_filter)?.drain()?.set_option(filter)
+        self.set_option(drop_filter)?
+            .drain()?
+            .set_option(filter)
     }
 
     // TODO - make recv more fun and document

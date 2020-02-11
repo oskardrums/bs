@@ -147,12 +147,15 @@ use libc::c_void;
 use libc::socklen_t;
 use libc::EBADF;
 use libc::SOL_SOCKET;
-const SO_ATTACH_FILTER: i32 = 26; // use libc::SO_ATTACH_FILTER;
+const SO_ATTACH_FILTER: i32 = 26; // SO_ATTACH_FILTER;
 use libc::{getsockopt, setsockopt};
 use std::error;
 use std::fmt;
 //use std::mem::size_of_val;
 use std::os::unix::io::RawFd;
+use std::fmt::Debug;
+
+use log::debug;
 
 /// `bs-system`'s custom `Error` type, returned by `SocketOption::set`/`get`.
 ///
@@ -246,7 +249,7 @@ impl SocketFilterProgram {
 }
 
 /// A viable `optval` argument for `set/getsockopt(2)`
-pub trait SocketOption: Sized {
+pub trait SocketOption: Sized + Debug {
     /// Returns a `Level` to be passed to `set/getsockopt(2)`
     fn level() -> Level;
 
@@ -263,6 +266,8 @@ pub trait SetSocketOption: SocketOption {
     /// # Errors
     /// Will rethrow any errors produced by the underlying `setsockopt` call
     fn set(&self, socket: RawFd) -> Result<i32> {
+
+        debug!("setting option {:?} on socket {:?}", self, socket);
         let ptr: *const Self = self;
         unsafe {
             cvt(setsockopt(

@@ -10,3 +10,8 @@ default = ["bs-filter"]
 [dependencies]
 bs-filter = { path = "../bs-filter", version = "0.1", optional = true }
 bs-socket = { path = "../bs-socket", version = "0.1" }
+
+[dev-dependencies]
+log               = "0.4"
+eui48               = "0.4"
+env_logger = "0.7"
