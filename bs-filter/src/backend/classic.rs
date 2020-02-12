@@ -1,5 +1,5 @@
 use crate::backend::{Backend, FilterBackend};
-use crate::cbpf;
+use bs_cbpf as cbpf;
 use bs_system::Result;
 
 /// Phantom struct to represent Classic BPF related
@@ -8,7 +8,7 @@ use bs_system::Result;
 pub struct Classic {}
 
 impl FilterBackend for Classic {
-    type SocketOption = cbpf::SocketOption;
+    type SocketOption = cbpf::SocketFilterProgram;
 }
 
 impl Backend for Classic {

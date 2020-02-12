@@ -156,8 +156,6 @@ use log::debug;
 use std::error;
 use std::fmt;
 use std::fmt::Debug;
-use std::hash::Hash;
-use std::mem::size_of;
 use std::os::unix::io::RawFd;
 
 /// `bs-system`'s custom `Error` type, returned by `SocketOption::set`/`get`.
@@ -206,34 +204,6 @@ pub enum Name {
 
     /// `SO_ATTACH_BPF`
     AttachBpf = 50,
-}
-
-/// `sock_filter`
-#[repr(C)]
-#[derive(Debug, Default, Copy, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
-pub struct SocketFilter {
-    code: u16,
-    jt: u8,
-    jf: u8,
-    k: u32,
-}
-
-impl SocketFilter {
-    /// Creates a new `SocketFilter` with the given parameters
-    pub const fn new(code: u16, jt: u8, jf: u8, k: u32) -> Self {
-        Self { code, jt, jf, k }
-    }
-
-    /// Helper function, creates a new `SocketFilter` with given `code`
-    /// other parameters (`jt`, `jf`, `k`) are set to 0
-    pub const fn from_code(code: u16) -> Self {
-        Self {
-            code,
-            jt: 0,
-            jf: 0,
-            k: 0,
-        }
-    }
 }
 
 /// A viable `optval` argument for `set/getsockopt(2)`
@@ -297,44 +267,9 @@ pub trait GetSocketOption: SocketOption + From<Vec<u8>> {
     }
 }
 */
-/// `sock_fprog`
-#[repr(C)]
-#[derive(Debug, Clone)]
-pub struct SocketFilterProgram {
-    len: u16,
-    filter: Box<[SocketFilter]>,
-}
-
-impl SocketFilterProgram {
-    /// Creates a new `SocketFilterProgram` from the given `SocketFilter` vector
-    pub fn from_vector(v: Vec<SocketFilter>) -> Self {
-        let len = v.len() as u16;
-        let filter = v.into_boxed_slice();
-        Self { len, filter }
-    }
-}
-
-impl SocketOption for SocketFilterProgram {
-    fn level() -> Level {
-        Level::Socket
-    }
-    fn name() -> Name {
-        Name::AttachFilter
-    }
-    fn optlen(&self) -> socklen_t {
-        // XXX - here be dragons
-        #[repr(C)]
-        struct S {
-            len: u16,
-            filter: *mut SocketFilter,
-        }
-        size_of::<S>() as socklen_t
-    }
-}
-
-impl SetSocketOption for SocketFilterProgram {}
 #[cfg(test)]
 mod tests {
+    /*
     use super::*;
     #[test]
     fn set_sock_fprog_expect_ebadf() {
@@ -347,4 +282,5 @@ mod tests {
         assert_eq!(prog.set(55555), expected);
         assert_eq!(prog.set(3214), expected);
     }
+    */
 }
