@@ -375,9 +375,10 @@ pub struct SocketFilterBpfAttribute {
 
 const BPF_PROG_TYPE_SOCKET_FILTER: u32 = 1;
 
-use syscall::syscall;
 use std::ffi::CString;
-use std::ptr::null_mut;
+//use std::ptr::null_mut;
+use std::mem::forget;
+use syscall::syscall;
 
 impl SocketFilterBpfAttribute {
     /// Creates a new `SocketFilterBpfAttribute` from the given `BpfInstruction` vector
@@ -386,9 +387,11 @@ impl SocketFilterBpfAttribute {
         let instructions_count = v.len() as u32;
         let instructions = v.into_boxed_slice();
         let license = CString::new("GPL").unwrap();
-        let log_level = 0;
-        let log_size = 0;
-        let log_buffer = Vec::default();
+//        let log_level = if cfg!(debug_assertions) { 1 } else { 0 };
+//        let log_size: u32 = if cfg!(debug_assertions) { 4096 } else { 0 };
+        let log_level = 1;
+        let log_size = 4096;
+        let log_buffer = Vec::with_capacity(log_size as usize);
         let kernel_version = 0;
         Self {
             program_type,
@@ -403,7 +406,7 @@ impl SocketFilterBpfAttribute {
     }
 
     /// XXX
-    pub fn load(self) -> Result<SocketFilterFd> {
+    pub fn load(mut self) -> Result<SocketFilterFd> {
         #[repr(C)]
         struct Attr {
             program_type: u32,
@@ -416,6 +419,15 @@ impl SocketFilterBpfAttribute {
             kernel_version: u32,
             prog_flags: u32,
         }
+        let log_ptr = 
+            self.log_buffer.as_mut_ptr();
+        /*
+        let log_ptr = if cfg!(debug_assertions) {
+            self.log_buffer.as_mut_ptr()
+        } else {
+            null_mut()
+        };
+        */
 
         let mut attr = Attr {
             program_type: self.program_type,
@@ -424,15 +436,22 @@ impl SocketFilterBpfAttribute {
             license: self.license.as_ptr() as *const c_void,
             log_level: self.log_level,
             log_size: self.log_size,
-            log_buffer: null_mut(),
+            log_buffer: log_ptr as *mut c_void,
             kernel_version: self.kernel_version,
             prog_flags: 0,
         };
 
         let ptr: *mut Attr = &mut attr;
         let fd = unsafe {
-            syscall!(BPF, 5, ptr, size_of_val(&attr)) as i32
+            syscall!(BPF, 5, ptr, size_of_val(&attr)) as i32 
         };
+
+        unsafe {
+            forget(self.log_buffer);
+            let log = Vec::from_raw_parts(log_ptr, self.log_size as usize, self.log_size as usize);
+            debug!("BPF_PROG_LOAD log: {:}", String::from_utf8(log).unwrap());
+        }
+
         if fd > 0 {
             Ok(SocketFilterFd { fd })
         } else {

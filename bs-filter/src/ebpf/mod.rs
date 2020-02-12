@@ -59,8 +59,8 @@ const EXIT: Instruction = Instruction::from_code((BPF_JMP | BPF_EXIT) as u8);
 const fn load_packet_length(dst: Register) -> Instruction {
     Instruction::new(
         (BPF_LDX | BPF_W | BPF_MEM) as u8,
-        dst,
         Register::SocketBuffer,
+        dst,
         OFFSET_SK_BUFF_LEN,
         0,
     )
