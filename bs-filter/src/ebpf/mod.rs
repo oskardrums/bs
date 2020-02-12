@@ -80,9 +80,10 @@ const fn copy(dst: Register, src: Register) -> Instruction {
     Instruction::new((BPF_ALU64 | BPF_MOV | BPF_X) as u8, dst, src, 0, 0)
 }
 
+/// # logic
+/// * set R6 a pointer to the processed packet, necessery for eBPF direct packet access
 pub fn initialization_sequence() -> Vec<Instruction> {
     vec![
-        copy_imm(Register::Ret, 0),
         copy(Register::Context, Register::SocketBuffer),
     ]
 }
