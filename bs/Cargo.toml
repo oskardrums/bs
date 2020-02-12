@@ -6,6 +6,7 @@ edition = "2018"
 
 [features]
 default = ["bs-filter"]
+ebpf    = ["bs-filter/bs-ebpf"]
 
 [dependencies]
 bs-filter = { path = "../bs-filter", version = "0.1", optional = true }

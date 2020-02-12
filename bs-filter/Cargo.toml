@@ -5,7 +5,7 @@ authors = ["Oskar Matzerath <moskar.drummer@gmail.com>"]
 edition = "2018"
 
 [features]
-default = ["bs-ebpf", "bs-cbpf"]
+default = ["bs-cbpf"]
 
 [dependencies]
 boolean_expression  = "0.3"

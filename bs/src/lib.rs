@@ -11,7 +11,7 @@
 //! # use eui48::MacAddress;
 //! use bs::{
 //!     filter::{
-//!         backend::Extended,
+//!         backend::Classic,
 //!         idiom::{
 //!             ip::ip_src,
 //!             ethernet::ether_src,
@@ -36,7 +36,7 @@
 //!     let mut s: Socket<PacketLayer2Socket> = Socket::new()?;
 //!
 //!     s.set_filter(
-//!         ( ip_src::<Extended>(vip) & ether_src(my_gateway) )
+//!         ( ip_src::<Classic>(vip) & ether_src(my_gateway) )
 //!             .compile()?
 //!             .build()?
 //!     )?;
@@ -116,7 +116,7 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(all(target_os = "linux", feature = "ebpf"))]
     #[test]
     fn packet_socket_ebpf_arp_filter() {
         let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
@@ -172,9 +172,9 @@ mod tests {
         //      let _ = s.recv(&mut buf, 0);
     }
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(all(target_os = "linux", feature = "ebpf"))]
     #[test]
-    fn packet_socket_extended_ip_host() {
+    fn packet_socket_ebpf_ip_host() {
         init();
         let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
         let _ = s.set_filter(
