@@ -112,7 +112,7 @@ pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketOption
     if len > u16::max_value() as usize {
         return Err(SystemError(EOVERFLOW));
     }
-    Ok(SocketFilterBpfAttribute::from_vector(instructions).load()?)
+    Ok(SocketFilterBpfAttribute::new(instructions).load()?)
 }
 
 const fn jump_always(offset: i16) -> Instruction {
