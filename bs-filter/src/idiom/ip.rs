@@ -1,11 +1,13 @@
 use crate::backend::Backend;
-use bs_system::consts::SIZE_ETHER_HEADER;
-use bs_system::consts::{OFFSET_IP4_DST, OFFSET_IP4_PROTO, OFFSET_IP4_SRC, OFFSET_IP4_TTL};
-use bs_system::consts::{OFFSET_IP6_DST, OFFSET_IP6_HOP_LIMIT, OFFSET_IP6_NEXT_HEADER, OFFSET_IP6_SRC};
 use crate::idiom::ethernet::{ether_type_ip4, ether_type_ip6};
 use crate::idiom::shift_offset_equals_u32;
 use crate::idiom::shift_offset_equals_u8;
 use crate::predicate::Predicate;
+use bs_system::consts::SIZE_ETHER_HEADER;
+use bs_system::consts::{OFFSET_IP4_DST, OFFSET_IP4_PROTO, OFFSET_IP4_SRC, OFFSET_IP4_TTL};
+use bs_system::consts::{
+    OFFSET_IP6_DST, OFFSET_IP6_HOP_LIMIT, OFFSET_IP6_NEXT_HEADER, OFFSET_IP6_SRC,
+};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 /// true iff packet's IP TTL field is `ttl`, assuming IP layer starts at offset `shift`

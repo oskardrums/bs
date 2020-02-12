@@ -1,5 +1,5 @@
-use bs_ebpf as ebpf;
 use crate::backend::{Backend, FilterBackend};
+use bs_ebpf as ebpf;
 use bs_system::Result;
 
 /// Phantom struct to represent Extended BPF related

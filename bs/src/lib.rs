@@ -1,4 +1,54 @@
-//! safe, sound, low-level socket operations
+//! Safe, sound, low-level socket operations
+//!
+//! Provides a [full sockets API](socket/index.html) with optional support for [flexible kernel packet
+//! filtering](filter/index.html).
+//!
+//! # Examples
+//! ```
+//! # use bs_system::Result;
+//! # use bs_system::SystemError as Error;
+//! # use std::net::IpAddr;
+//! # use eui48::MacAddress;
+//! use bs::{
+//!     filter::{
+//!         backend::Extended,
+//!         idiom::{
+//!             ip::ip_src,
+//!             ethernet::ether_src,
+//!         },
+//!     },
+//!     socket::{
+//!         socket::Socket,
+//!         packet::PacketLayer2Socket,
+//!     },
+//! };
+//!
+//! # const IP_HEADER_LENGTH: usize = 20;
+//! # const IP_SOURCE_START: usize = 12;
+//! # const IP_SOURCE_END: usize = IP_SOURCE_START + 4;
+//! # const PARSE_ERROR: i32 = 0;
+//!
+//! fn raw_ethernet_only_loves_one_one_one_one(buffer: &mut [u8]) -> Result<()> {
+//!
+//!     let vip = "1.1.1.1".parse().map_err(|_| Error(PARSE_ERROR))?;
+//!     let my_gateway = "00:11:22:33:44:55".parse().map_err(|_| Error(PARSE_ERROR))?;
+//!
+//!     let mut s: Socket<PacketLayer2Socket> = Socket::new()?;
+//!
+//!     s.set_filter(
+//!         ( ip_src::<Extended>(vip) & ether_src(my_gateway) )
+//!             .compile()?
+//!             .build()?
+//!     )?;
+//!
+//!     let got_this_many_bytes = s.recv(buffer, 0)?;
+//!
+//!     assert!(got_this_many_bytes > IP_HEADER_LENGTH);
+//!     assert_eq!([1, 1, 1, 1], buffer[IP_SOURCE_START..IP_SOURCE_END]);
+//!
+//!     Ok(())
+//! }
+//!```
 
 #![deny(
     bad_style,
@@ -75,7 +125,6 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-
     #[cfg(all(target_os = "linux", feature = "bs-filter"))]
     #[test]
     fn packet_socket_ether_src() {
@@ -121,5 +170,19 @@ mod tests {
 
         //      let mut buf: [u8;1024] = [0;1024];
         //      let _ = s.recv(&mut buf, 0);
+    }
+
+    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[test]
+    fn packet_socket_extended_ip_host() {
+        init();
+        let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
+        let _ = s.set_filter(
+            idiom::ip::ip_host::<backend::Extended>("1.1.1.1".parse().unwrap())
+                .compile()
+                .unwrap()
+                .build()
+                .unwrap(),
+        );
     }
 }

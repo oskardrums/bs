@@ -28,13 +28,12 @@
     missing_copy_implementations
 )]
 
-
-/// `Socket` struct and implementation
-pub mod socket;
 /// `packet(7)` sockets
 pub mod packet;
 /// `raw(7)` sockets
 pub mod raw;
+/// `Socket` struct and implementation
+pub mod socket;
 /// `tcp(7)` sockets
 pub mod tcp;
 /// `udp(7)` sockets
@@ -47,8 +46,8 @@ mod tests {
     use super::socket::*;
     use super::tcp::*;
     use super::udp::*;
-    use bs_filter::idiom::ethernet::ether_type_arp;
     use bs_filter::backend::Classic;
+    use bs_filter::idiom::ethernet::ether_type_arp;
     use libc::SOCK_NONBLOCK;
 
     #[test]

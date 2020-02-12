@@ -35,8 +35,8 @@ pub(crate) mod program;
 pub use filter::Filter;
 pub use predicate::Predicate;
 
-/// Provides various filtering backends, namely cBPF [`Classic`](struct.backend.Classic.html) 
-/// and eBPF [`Extended`](struct.backend.Extended)
+/// Provides various filtering backends, namely cBPF [`Classic`](backend/struct.Classic.html)
+/// and eBPF [`Extended`](backend/struct.Extended.html)
 pub mod backend;
 
 /// Ready-made filtering packet idioms, ranging from low level (e.g. `offset_equals_*` idioms) to

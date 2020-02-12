@@ -1,8 +1,8 @@
-use libc::{SOL_SOCKET, EOVERFLOW};
+use bs_system::{consts::*, Level, Name, Result, SetSocketOption, SocketOption, SystemError};
 use libc::socklen_t;
+use libc::{EOVERFLOW, SOL_SOCKET};
 use std::hash::Hash;
 use std::mem::size_of;
-use bs_system::{Result, SystemError, SocketOption, SetSocketOption, Level, Name, consts::*};
 pub const OPTION_LEVEL: i32 = SOL_SOCKET;
 pub const OPTION_NAME: i32 = 26; // SO_ATTACH_FILTER;
 
@@ -73,7 +73,6 @@ impl SocketOption for SocketFilterProgram {
 
 impl SetSocketOption for SocketFilterProgram {}
 
-
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub enum Comparison {
@@ -102,7 +101,6 @@ impl From<u8> for Comparison {
 }
 
 pub type Value = u32;
-
 
 const DROP: Instruction = Instruction::new((BPF_RET | BPF_K) as _, 0, 0, 0);
 const RETURN_A: Instruction = Instruction::new((BPF_RET | BPF_A) as _, 0, 0, 0);

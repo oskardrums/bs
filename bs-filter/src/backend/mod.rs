@@ -2,15 +2,19 @@
 //! represent the relevant backend of BPF operation
 //! (Classic / Extended). This module will be replaced
 //! with an enum when const generics land in stable rust.
+
+use bs_system::Result;
+use bs_system::SetSocketOption;
 use std::fmt::Debug;
 use std::hash::Hash;
-use bs_system::SetSocketOption;
-use bs_system::Result;
+
+#[cfg(feature = "bs-cbpf")]
 mod classic;
+#[cfg(feature = "bs-cbpf")]
+pub use classic::Classic;
+
 #[cfg(feature = "bs-ebpf")]
 mod extended;
-
-pub use classic::Classic;
 #[cfg(feature = "bs-ebpf")]
 pub use extended::Extended;
 

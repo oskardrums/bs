@@ -1,11 +1,11 @@
-use bs_system::{Result, SystemError, SocketOption, SetSocketOption, Level, Name, consts::*};
+use bs_system::{consts::*, Level, Name, Result, SetSocketOption, SocketOption, SystemError};
+use libc::socklen_t;
 use libc::{EOVERFLOW, SOL_SOCKET};
+use log::debug;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive as FromVal;
 use std::mem::size_of_val;
 use std::os::unix::io::RawFd;
-use libc::socklen_t;
-use log::debug;
 pub const OPTION_LEVEL: i32 = SOL_SOCKET;
 pub const OPTION_NAME: i32 = 50; // SO_ATTACH_BPF;
 
@@ -45,13 +45,7 @@ impl Register {
 
 impl Instruction {
     /// Creates a new `Instruction` with the given parameters
-    pub const fn new(
-        code: u8,
-        dst_reg: Register,
-        src_reg: Register,
-        off: i16,
-        imm: i32,
-    ) -> Self {
+    pub const fn new(code: u8, dst_reg: Register, src_reg: Register, off: i16, imm: i32) -> Self {
         Self {
             code,
             regs: ((dst_reg as u8) << 4) | src_reg as u8,
@@ -92,8 +86,6 @@ impl SocketOption for SocketFilterFd {
 }
 
 impl SetSocketOption for SocketFilterFd {}
-
-
 
 /// `sock_fprog`
 #[repr(C)]
@@ -195,8 +187,6 @@ impl SocketFilterBpfAttribute {
     }
 }
 
-
-
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd, FromPrimitive, ToPrimitive)]
 pub enum Comparison {
@@ -268,9 +258,7 @@ const fn copy(dst: Register, src: Register) -> Instruction {
 /// # logic
 /// * set R6 a pointer to the processed packet, necessery for eBPF direct packet access
 pub fn initialization_sequence() -> Vec<Instruction> {
-    vec![
-        copy(Register::Context, Register::SocketBuffer),
-    ]
+    vec![copy(Register::Context, Register::SocketBuffer)]
 }
 
 pub fn return_sequence() -> (Vec<Instruction>, usize, usize) {
@@ -329,12 +317,7 @@ const fn jump_reg(comp: Comparison, dst: Register, src: Register, offset: i16) -
 }
 
 /// jump sequence
-pub fn jump(
-    comparison: Comparison,
-    operand: Operand,
-    jt: usize,
-    jf: usize,
-) -> Vec<Instruction> {
+pub fn jump(comparison: Comparison, operand: Operand, jt: usize, jf: usize) -> Vec<Instruction> {
     let distance_to_true_label: i16 = jt as i16 + 1;
     match operand {
         Operand::DstAndSrc(dst, src) => vec![
