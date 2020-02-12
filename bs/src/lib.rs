@@ -68,6 +68,16 @@ mod tests {
 
     #[cfg(all(target_os = "linux", feature = "bs-filter"))]
     #[test]
+    fn packet_socket_ebpf_arp_filter() {
+        let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
+        let p = idiom::ethernet::ether_type_arp::<backend::Extended>();
+        let f = p.compile().unwrap().build().unwrap();
+        let _ = s.set_filter(f).unwrap();
+    }
+
+
+    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[test]
     fn packet_socket_ether_src() {
         init();
         let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();

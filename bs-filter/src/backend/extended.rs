@@ -4,7 +4,7 @@ use bs_system::Result;
 
 /// Phantom struct to represent Extended BPF related
 /// functionalities.
-#[derive(Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Extended {}
 
 impl FilterBackend for Extended {
@@ -22,19 +22,19 @@ impl Backend for Extended {
     fn option_name() -> i32 {
         ebpf::OPTION_NAME
     }
-    fn initialization_sequence() -> Vec<Instruction<Self>> {
+    fn initialization_sequence() -> Vec<Self::Instruction> {
         ebpf::initialization_sequence()
     }
-    fn return_sequence() -> (Vec<Instruction<Self>>, usize, usize) {
+    fn return_sequence() -> (Vec<Self::Instruction>, usize, usize) {
         ebpf::return_sequence()
     }
-    fn teotology() -> Vec<Instruction<Self>> {
+    fn teotology() -> Vec<Self::Instruction> {
         ebpf::teotology()
     }
-    fn contradiction() -> Vec<Instruction<Self>> {
+    fn contradiction() -> Vec<Self::Instruction> {
         ebpf::contradiction()
     }
-    fn into_socket_option(instructions: Vec<Instruction<Self>>) -> Result<Self::SocketOption> {
+    fn into_socket_option(instructions: Vec<Self::Instruction>) -> Result<Self::SocketOption> {
         ebpf::into_socket_option(instructions)
     }
     fn jump(
@@ -42,16 +42,16 @@ impl Backend for Extended {
         operand: Self::Value,
         jt: usize,
         jf: usize,
-    ) -> Vec<Instruction<Self>> {
+    ) -> Vec<Self::Instruction> {
         ebpf::jump(comparison, operand, jt, jf)
     }
-    fn load_u8_at(offset: u32) -> Vec<Instruction<Self>> {
-        ebpf::load_u8_at(offset)
+    fn load_u8_at(offset: u32) -> Vec<Self::Instruction> {
+        ebpf::load_u8_at(offset as i32)
     }
-    fn load_u16_at(offset: u32) -> Vec<Instruction<Self>> {
-        ebpf::load_u16_at(offset)
+    fn load_u16_at(offset: u32) -> Vec<Self::Instruction> {
+        ebpf::load_u16_at(offset as i32)
     }
-    fn load_u32_at(offset: u32) -> Vec<Instruction<Self>> {
-        ebpf::load_u32_at(offset)
+    fn load_u32_at(offset: u32) -> Vec<Self::Instruction> {
+        ebpf::load_u32_at(offset as i32)
     }
 }

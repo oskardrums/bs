@@ -149,7 +149,6 @@ use libc::EBADF;
 use libc::SOL_SOCKET;
 //use libc::{getsockopt, setsockopt};
 use libc::setsockopt;
-use libc::bpf;
 use log::debug;
 use std::error;
 use std::fmt;
@@ -367,7 +366,7 @@ pub struct SocketFilterBpfAttribute {
     program_type: u32,
     instructions_count: u32,
     instructions: Box<[BpfInstruction]>,
-    license: &'static str,
+    license: CString,
     log_level: u32,
     log_size: u32,
     log_buffer: Vec<u8>,
@@ -376,7 +375,9 @@ pub struct SocketFilterBpfAttribute {
 
 const BPF_PROG_TYPE_SOCKET_FILTER: u32 = 1;
 
-// XXX - implement bpf(2) ... :-(
+use syscall::syscall;
+use std::ffi::CString;
+use std::ptr::null_mut;
 
 impl SocketFilterBpfAttribute {
     /// Creates a new `SocketFilterBpfAttribute` from the given `BpfInstruction` vector
@@ -384,7 +385,7 @@ impl SocketFilterBpfAttribute {
         let program_type = BPF_PROG_TYPE_SOCKET_FILTER;
         let instructions_count = v.len() as u32;
         let instructions = v.into_boxed_slice();
-        let license = "GPL";
+        let license = CString::new("GPL").unwrap();
         let log_level = 0;
         let log_size = 0;
         let log_buffer = Vec::default();
@@ -401,15 +402,41 @@ impl SocketFilterBpfAttribute {
         }
     }
 
+    /// XXX
     pub fn load(self) -> Result<SocketFilterFd> {
-        unsafe {
-            cvt(bpf(
-                socket,
-                Self::level() as i32,
-                Self::name() as i32,
-                ptr as *const c_void,
-                self.optlen(),
-            ))
+        #[repr(C)]
+        struct Attr {
+            program_type: u32,
+            instructions_count: u32,
+            instructions: *const c_void,
+            license: *const c_void,
+            log_level: u32,
+            log_size: u32,
+            log_buffer: *mut c_void,
+            kernel_version: u32,
+            prog_flags: u32,
+        }
+
+        let mut attr = Attr {
+            program_type: self.program_type,
+            instructions_count: self.instructions_count,
+            instructions: self.instructions.as_ptr() as *const c_void,
+            license: self.license.as_ptr() as *const c_void,
+            log_level: self.log_level,
+            log_size: self.log_size,
+            log_buffer: null_mut(),
+            kernel_version: self.kernel_version,
+            prog_flags: 0,
+        };
+
+        let ptr: *mut Attr = &mut attr;
+        let fd = unsafe {
+            syscall!(BPF, 5, ptr, size_of_val(&attr)) as i32
+        };
+        if fd > 0 {
+            Ok(SocketFilterFd { fd })
+        } else {
+            Err(SystemError(-fd))
         }
     }
 }

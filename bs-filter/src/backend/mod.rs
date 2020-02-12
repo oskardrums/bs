@@ -10,6 +10,7 @@ mod classic;
 mod extended;
 
 pub use classic::Classic;
+pub use extended::Extended;
 
 #[doc(hidden)]
 pub trait FilterBackend {

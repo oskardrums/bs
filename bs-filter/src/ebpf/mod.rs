@@ -1,6 +1,5 @@
 use bs_system::{Result, SystemError};
 use libc::{EOVERFLOW, SOL_SOCKET};
-#[macro_use]
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive as FromVal;
 
@@ -33,18 +32,21 @@ impl From<u8> for Comparison {
 }
 
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
-pub(crate) enum Opernad {
-    DstAndSrc(Register, Register),
+pub enum Operand {
     RegAndImm(Register, i32),
+
+    // XXX - remove the allow deriviate when no longer needed
+    #[allow(dead_code)]
+    DstAndSrc(Register, Register),
 }
 
-impl From<u32> for Opernad {
+impl From<u32> for Operand {
     fn from(u: u32) -> Self {
-        Opernad::RegAndImm(Register::Ret, u as i32)
+        Operand::RegAndImm(Register::Ret, u as i32)
     }
 }
 
-pub type Value = Opernad;
+pub type Value = Operand;
 
 use crate::consts::*;
 pub use bs_system::BpfInstruction as Instruction;
@@ -78,7 +80,7 @@ const fn copy(dst: Register, src: Register) -> Instruction {
     Instruction::new((BPF_ALU64 | BPF_MOV | BPF_X) as u8, dst, src, 0, 0)
 }
 
-pub const fn initialization_sequence() -> Vec<Instruction> {
+pub fn initialization_sequence() -> Vec<Instruction> {
     vec![
         copy_imm(Register::Ret, 0),
         copy(Register::Context, Register::SocketBuffer),
@@ -102,6 +104,7 @@ pub fn contradiction() -> Vec<Instruction> {
     vec![copy_imm(Register::Ret, 0)]
 }
 
+use bs_system::SocketFilterBpfAttribute;
 pub use bs_system::SocketFilterFd as SocketOption;
 
 pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketOption> {
@@ -109,7 +112,7 @@ pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketOption
     if len > u16::max_value() as usize {
         return Err(SystemError(EOVERFLOW));
     }
-    Ok(SocketOption::from_vector(instructions))
+    Ok(SocketFilterBpfAttribute::from_vector(instructions).load()?)
 }
 
 const fn jump_always(offset: i16) -> Instruction {
@@ -142,21 +145,27 @@ const fn jump_reg(comp: Comparison, dst: Register, src: Register, offset: i16) -
     )
 }
 
-pub fn jump(comparison: Comparison, operand: Opernad, jt: usize, jf: usize) -> Vec<Instruction> {
+/// jump sequence
+pub fn jump(
+    comparison: Comparison,
+    operand: Operand,
+    jt: usize,
+    jf: usize,
+) -> Vec<Instruction> {
     let distance_to_true_label: i16 = jt as i16 + 1;
     match operand {
-        Opernad::RegAndImm(reg, imm) => vec![
-            jump_always(jf as i16),
-            jump_imm(comparison, reg, imm, distance_to_true_label),
-        ],
-        Opernad::DstAndSrc(dst, src) => vec![
+        Operand::DstAndSrc(dst, src) => vec![
             jump_always(jf as i16),
             jump_reg(comparison, dst, src, distance_to_true_label),
+        ],
+        Operand::RegAndImm(reg, imm) => vec![
+            jump_always(jf as i16),
+            jump_imm(comparison, reg, imm, distance_to_true_label),
         ],
     }
 }
 
-pub const fn load_u8_at(offset: i32) -> Vec<Instruction> {
+pub fn load_u8_at(offset: i32) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_ABS | BPF_LD | BPF_B) as _,
         Register::None,
@@ -166,7 +175,7 @@ pub const fn load_u8_at(offset: i32) -> Vec<Instruction> {
     )]
 }
 
-pub const fn load_u16_at(offset: i32) -> Vec<Instruction> {
+pub fn load_u16_at(offset: i32) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_ABS | BPF_LD | BPF_H) as _,
         Register::None,
@@ -176,7 +185,7 @@ pub const fn load_u16_at(offset: i32) -> Vec<Instruction> {
     )]
 }
 
-pub const fn load_u32_at(offset: i32) -> Vec<Instruction> {
+pub fn load_u32_at(offset: i32) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_ABS | BPF_LD | BPF_W) as _,
         Register::None,
