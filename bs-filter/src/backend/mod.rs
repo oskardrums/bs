@@ -7,9 +7,11 @@ use std::hash::Hash;
 use bs_system::SetSocketOption;
 use bs_system::Result;
 mod classic;
+#[cfg(feature = "bs-ebpf")]
 mod extended;
 
 pub use classic::Classic;
+#[cfg(feature = "bs-ebpf")]
 pub use extended::Extended;
 
 #[doc(hidden)]

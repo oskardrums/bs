@@ -33,7 +33,7 @@ pub type Value = u32;
 
 
 pub use bs_system::SocketFilter as Instruction;
-use crate::consts::*;
+use bs_system::consts::*;
 
 const DROP: Instruction = Instruction::new((BPF_RET | BPF_K) as _, 0, 0, 0);
 const RETURN_A: Instruction = Instruction::new((BPF_RET | BPF_A) as _, 0, 0, 0);

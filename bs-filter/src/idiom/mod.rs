@@ -1,5 +1,5 @@
 use crate::backend::Backend;
-use crate::consts::BPF_JEQ;
+use bs_system::consts::BPF_JEQ;
 use crate::predicate::{Expr::*, Predicate};
 use crate::Condition;
 

@@ -36,8 +36,8 @@ pub(crate) mod program;
 pub use filter::Filter;
 pub use predicate::Predicate;
 
-/// Provides various filtering backends, namely cBPF (`backend::Classic`) and eBPF
-/// (`backend::Extended`)
+/// Provides various filtering backends, namely cBPF [`Classic`](struct.backend.Classic.html) 
+/// and eBPF [`Extended`](struct.backend.Extended)
 pub mod backend;
 
 /// Ready-made filtering packet idioms, ranging from low level (e.g. `offset_equals_*` idioms) to
@@ -70,7 +70,11 @@ pub(crate) struct Condition<K: backend::Backend> {
 }
 
 impl<K: backend::Backend> Condition<K> {
-    pub(crate) fn new(computation: Vec<K::Instruction>, comparison: K::Comparison, operand: K::Value) -> Self {
+    pub(crate) fn new(
+        computation: Vec<K::Instruction>,
+        comparison: K::Comparison,
+        operand: K::Value,
+    ) -> Self {
         Self {
             computation: Computation::new(computation),
             comparison,
