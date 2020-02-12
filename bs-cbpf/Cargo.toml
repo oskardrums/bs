@@ -1,0 +1,10 @@
+[package]
+name = "bs-cbpf"
+version = "0.1.0"
+authors = ["Oskar Matzerath <moskar.drummer@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+libc                = "0.2"
+bs-system          = { version = "0.1", path = "../bs-system" }
+log = "0.4"

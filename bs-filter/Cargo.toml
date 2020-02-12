@@ -4,7 +4,8 @@ version = "0.1.0"
 authors = ["Oskar Matzerath <moskar.drummer@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["bs-cbpf"]
 
 [dependencies]
 boolean_expression  = "0.3"
@@ -12,3 +13,11 @@ eui48               = "0.4"
 libc                = "0.2"
 bs-system          = { version = "0.1", path = "../bs-system" }
 byteorder = "1.3"
+num-traits = "0.2"
+num-derive = "0.3"
+
+[target.'cfg(target_os="linux")'.dependencies]
+bs-ebpf          = { version = "0.1", path = "../bs-ebpf", optional = true }
+
+[target.'cfg(unix)'.dependencies]
+bs-cbpf          = { version = "0.1", path = "../bs-cbpf", optional = true }

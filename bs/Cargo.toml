@@ -6,6 +6,7 @@ edition = "2018"
 
 [features]
 default = ["bs-filter"]
+ebpf    = ["bs-filter/bs-ebpf"]
 
 [dependencies]
 bs-filter = { path = "../bs-filter", version = "0.1", optional = true }
@@ -15,3 +16,4 @@ bs-socket = { path = "../bs-socket", version = "0.1" }
 log               = "0.4"
 eui48               = "0.4"
 env_logger = "0.7"
+bs-system = { path = "../bs-system", version = "0.1" }

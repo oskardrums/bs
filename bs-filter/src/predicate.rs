@@ -2,8 +2,8 @@ use crate::backend::Backend;
 use crate::filter::Filter;
 use crate::Condition;
 pub use boolean_expression::Expr;
-pub use boolean_expression::BDD;
 pub use boolean_expression::Expr::*;
+pub use boolean_expression::BDD;
 use bs_system::Result;
 use std::cmp::Ord;
 use std::fmt::Debug;
@@ -154,7 +154,6 @@ mod tests {
     fn simple_and() {
         let true_and_false = Predicate::const_false() & Predicate::const_true();
         assert_eq!(true_and_false.satisfiable(), false);
-
     }
 
     #[test]
@@ -173,7 +172,8 @@ mod tests {
 
     #[test]
     fn complex() {
-        let complex = !(Predicate::const_true() & Predicate::const_false()) | Predicate::const_false();
+        let complex =
+            !(Predicate::const_true() & Predicate::const_false()) | Predicate::const_false();
         assert_eq!(complex.satisfiable(), true);
     }
 }

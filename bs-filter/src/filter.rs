@@ -1,7 +1,7 @@
 use crate::backend::Backend;
 use crate::program::Program;
-use std::iter::FromIterator;
 use bs_system::Result;
+use std::iter::FromIterator;
 
 /// A concrete appicable socket filter
 #[derive(Debug)]
@@ -12,7 +12,7 @@ pub struct Filter<K: Backend> {
 impl<K: Backend> Filter<K> {
     /// Transform the `Filter` into a `SocketOption` settable on a `Socket`
     pub fn build(self) -> Result<K::SocketOption> {
-        let prog: Program<K> = self.into(); 
+        let prog: Program<K> = self.into();
         prog.build()
     }
 }

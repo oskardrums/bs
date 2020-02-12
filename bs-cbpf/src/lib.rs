@@ -1,7 +1,77 @@
-use libc::{SOL_SOCKET, EOVERFLOW};
-use bs_system::{Result, SystemError};
+use bs_system::{consts::*, Level, Name, Result, SetSocketOption, SocketOption, SystemError};
+use libc::socklen_t;
+use libc::{EOVERFLOW, SOL_SOCKET};
+use std::hash::Hash;
+use std::mem::size_of;
 pub const OPTION_LEVEL: i32 = SOL_SOCKET;
 pub const OPTION_NAME: i32 = 26; // SO_ATTACH_FILTER;
+
+/// `sock_filter`
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
+pub struct SocketFilter {
+    code: u16,
+    jt: u8,
+    jf: u8,
+    k: u32,
+}
+
+pub type Instruction = SocketFilter;
+
+impl SocketFilter {
+    /// Creates a new `SocketFilter` with the given parameters
+    pub const fn new(code: u16, jt: u8, jf: u8, k: u32) -> Self {
+        Self { code, jt, jf, k }
+    }
+
+    /// Helper function, creates a new `SocketFilter` with given `code`
+    /// other parameters (`jt`, `jf`, `k`) are set to 0
+    pub const fn from_code(code: u16) -> Self {
+        Self {
+            code,
+            jt: 0,
+            jf: 0,
+            k: 0,
+        }
+    }
+}
+
+/// `sock_fprog`
+#[repr(C)]
+#[derive(Debug, Clone)]
+pub struct SocketFilterProgram {
+    len: u16,
+    filter: Box<[SocketFilter]>,
+}
+
+impl SocketFilterProgram {
+    /// Creates a new `SocketFilterProgram` from the given `SocketFilter` vector
+    pub fn from_vector(v: Vec<SocketFilter>) -> Self {
+        let len = v.len() as u16;
+        let filter = v.into_boxed_slice();
+        Self { len, filter }
+    }
+}
+
+impl SocketOption for SocketFilterProgram {
+    fn level() -> Level {
+        Level::Socket
+    }
+    fn name() -> Name {
+        Name::AttachFilter
+    }
+    fn optlen(&self) -> socklen_t {
+        // XXX - here be dragons
+        #[repr(C)]
+        struct S {
+            len: u16,
+            filter: *mut SocketFilter,
+        }
+        size_of::<S>() as socklen_t
+    }
+}
+
+impl SetSocketOption for SocketFilterProgram {}
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
@@ -14,6 +84,7 @@ pub enum Comparison {
     Unknown,
 }
 
+// TODO - use FromPrimitive instead
 impl From<u8> for Comparison {
     fn from(value: u8) -> Self {
         // TODO - rethink this part - maybe mask the input
@@ -30,10 +101,6 @@ impl From<u8> for Comparison {
 }
 
 pub type Value = u32;
-
-
-pub use bs_system::SocketFilter as Instruction;
-use crate::consts::*;
 
 const DROP: Instruction = Instruction::new((BPF_RET | BPF_K) as _, 0, 0, 0);
 const RETURN_A: Instruction = Instruction::new((BPF_RET | BPF_A) as _, 0, 0, 0);
@@ -53,14 +120,12 @@ pub fn contradiction() -> Vec<Instruction> {
     vec![DROP]
 }
 
-pub use bs_system::SocketFilterProgram as SocketOption;
-
-pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketOption> {
+pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketFilterProgram> {
     let len = instructions.len();
     if len > u16::max_value() as usize {
         return Err(SystemError(EOVERFLOW));
     }
-    Ok(SocketOption::from_vector(instructions))
+    Ok(SocketFilterProgram::from_vector(instructions))
 }
 
 pub fn jump(comparison: Comparison, operand: u32, jt: usize, jf: usize) -> Vec<Instruction> {

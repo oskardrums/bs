@@ -28,20 +28,15 @@
     missing_copy_implementations
 )]
 
-
-pub(crate) mod cbpf;
-//pub(crate) mod ebpf;
 pub(crate) mod filter;
 pub(crate) mod predicate;
 pub(crate) mod program;
-#[allow(dead_code)]
-pub(crate) mod consts;
 
 pub use filter::Filter;
 pub use predicate::Predicate;
 
-/// Provides various filtering backends, namely cBPF (`backend::Classic`) and eBPF
-/// (`backend::Extended`)
+/// Provides various filtering backends, namely cBPF [`Classic`](backend/struct.Classic.html)
+/// and eBPF [`Extended`](backend/struct.Extended.html)
 pub mod backend;
 
 /// Ready-made filtering packet idioms, ranging from low level (e.g. `offset_equals_*` idioms) to
@@ -74,7 +69,11 @@ pub(crate) struct Condition<K: backend::Backend> {
 }
 
 impl<K: backend::Backend> Condition<K> {
-    pub(crate) fn new(computation: Vec<K::Instruction>, comparison: K::Comparison, operand: K::Value) -> Self {
+    pub(crate) fn new(
+        computation: Vec<K::Instruction>,
+        comparison: K::Comparison,
+        operand: K::Value,
+    ) -> Self {
         Self {
             computation: Computation::new(computation),
             comparison,

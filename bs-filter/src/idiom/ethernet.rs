@@ -1,10 +1,10 @@
 use crate::backend::Backend;
-use crate::consts::BPF_JEQ;
-use crate::consts::{OFFSET_ETHER_DST, OFFSET_ETHER_SRC, OFFSET_ETHER_TYPE};
-use crate::consts::{ETH_P_ARP, ETH_P_IP, ETH_P_IPV6};
 use crate::idiom::offset_equals_u16;
 use crate::predicate::{Expr::*, Predicate};
 use crate::Condition;
+use bs_system::consts::BPF_JEQ;
+use bs_system::consts::{ETH_P_ARP, ETH_P_IP, ETH_P_IPV6};
+use bs_system::consts::{OFFSET_ETHER_DST, OFFSET_ETHER_SRC, OFFSET_ETHER_TYPE};
 use eui48::MacAddress;
 use std::mem::size_of;
 use std::mem::transmute;

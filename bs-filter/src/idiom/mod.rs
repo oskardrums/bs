@@ -1,7 +1,7 @@
 use crate::backend::Backend;
-use crate::consts::BPF_JEQ;
 use crate::predicate::{Expr::*, Predicate};
 use crate::Condition;
+use bs_system::consts::BPF_JEQ;
 
 /// true iff the octet at offset `offset` equals `value`
 pub fn offset_equals_u8<K: Backend>(offset: u32, value: u8) -> Predicate<K> {

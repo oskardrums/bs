@@ -55,3 +55,25 @@ pub const ETH_P_ARP: u32 = 0x0806;
 pub const ETH_P_IPV6: u32 = 0x86DD;
 pub const ETH_P_LLDP: u32 = 0x88CC;
 pub const ETH_P_8021Q: u32 = 0x8100;
+
+/* Extended instruction set based on top of classic BPF */
+pub const BPF_JMP32: i32 = 0x06;
+pub const BPF_ALU64: i32 = 0x07;
+pub const BPF_DW: i32 = 0x18;
+pub const BPF_XADD: i32 = 0xc0;
+pub const BPF_MOV: i32 = 0xb0;
+pub const BPF_ARSH: i32 = 0xc0;
+pub const BPF_END: i32 = 0xd0;
+pub const BPF_TO_LE: i32 = 0x00;
+pub const BPF_TO_BE: i32 = 0x08;
+pub const BPF_FROM_LE: i32 = BPF_TO_LE;
+pub const BPF_FROM_BE: i32 = BPF_TO_BE;
+pub const BPF_JNE: i32 = 0x50;
+pub const BPF_JLT: i32 = 0xa0;
+pub const BPF_JLE: i32 = 0xb0;
+pub const BPF_JSGT: i32 = 0x60;
+pub const BPF_JSGE: i32 = 0x70;
+pub const BPF_JSLT: i32 = 0xc0;
+pub const BPF_JSLE: i32 = 0xd0;
+pub const BPF_CALL: i32 = 0x80;
+pub const BPF_EXIT: i32 = 0x90;
