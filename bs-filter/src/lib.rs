@@ -29,12 +29,9 @@
 )]
 
 pub(crate) mod cbpf;
-pub(crate) mod ebpf;
 pub(crate) mod filter;
 pub(crate) mod predicate;
 pub(crate) mod program;
-#[allow(dead_code)]
-pub(crate) mod consts;
 
 pub use filter::Filter;
 pub use predicate::Predicate;

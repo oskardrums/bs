@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "bs-ebpf", 
     "bs-filter", 
     "bs-socket",
     "bs-system",

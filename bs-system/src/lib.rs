@@ -52,6 +52,9 @@
     missing_copy_implementations
 )]
 
+#[doc(hidden)]
+pub mod consts;
+
 /// Shamelessly copied from `nix`'s `errno` module
 pub(crate) mod errno {
     use libc::c_int;
@@ -155,7 +158,6 @@ use std::fmt;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::mem::size_of;
-use std::mem::size_of_val;
 use std::os::unix::io::RawFd;
 
 /// `bs-system`'s custom `Error` type, returned by `SocketOption::set`/`get`.
@@ -234,69 +236,6 @@ impl SocketFilter {
     }
 }
 
-/// `sock_filter`
-#[repr(C)]
-#[derive(Debug, Default, Copy, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
-pub struct BpfInstruction {
-    code: u8,
-    // Rust bitflags are no fun
-    regs: u8,
-    off: i16,
-    imm: i32,
-}
-
-#[doc(hidden)]
-#[repr(u8)]
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub enum BpfRegister {
-    Ret = 0,
-    Context = 1,
-    Arg1 = 2,
-    Arg2 = 3,
-    Arg3 = 4,
-    Arg4 = 5,
-    SocketBuffer = 6,
-    Gen1 = 7,
-    Gen2 = 8,
-    Gen3 = 9,
-    FramePointer = 10,
-}
-
-impl BpfRegister {
-    #[doc(hidden)]
-    #[allow(non_upper_case_globals)]
-    pub const None: Self = Self::Ret;
-}
-
-impl BpfInstruction {
-    /// Creates a new `BpfInstruction` with the given parameters
-    pub const fn new(
-        code: u8,
-        dst_reg: BpfRegister,
-        src_reg: BpfRegister,
-        off: i16,
-        imm: i32,
-    ) -> Self {
-        Self {
-            code,
-            regs: ((dst_reg as u8) << 4) | src_reg as u8,
-            off,
-            imm,
-        }
-    }
-
-    /// Helper function, creates a new `BpfInstruction` with given `code`
-    /// other parameters (registers, `off`, `imm`) are set to 0
-    pub const fn from_code(code: u8) -> Self {
-        Self {
-            code,
-            regs: 0,
-            off: 0,
-            imm: 0,
-        }
-    }
-}
-
 /// A viable `optval` argument for `set/getsockopt(2)`
 pub trait SocketOption: Sized + Debug {
     /// Returns a `Level` to be passed to `set/getsockopt(2)`
@@ -358,107 +297,6 @@ pub trait GetSocketOption: SocketOption + From<Vec<u8>> {
     }
 }
 */
-
-/// `sock_fprog`
-#[repr(C)]
-#[derive(Debug, Clone)]
-pub struct SocketFilterBpfAttribute {
-    program_type: u32,
-    instructions_count: u32,
-    instructions: Box<[BpfInstruction]>,
-    license: CString,
-    log_level: u32,
-    log_size: u32,
-    log_buffer: Vec<u8>,
-    kernel_version: u32,
-    program_flags: u32,
-}
-
-const BPF_PROG_TYPE_SOCKET_FILTER: u32 = 1;
-
-use std::ffi::CString;
-use std::mem::forget;
-use std::ptr::null_mut;
-use syscall::syscall;
-
-impl SocketFilterBpfAttribute {
-    /// Creates a new `SocketFilterBpfAttribute` from the given `BpfInstruction` vector
-    pub fn new(v: Vec<BpfInstruction>) -> Self {
-        let program_type = BPF_PROG_TYPE_SOCKET_FILTER;
-        let instructions_count = v.len() as u32;
-        let instructions = v.into_boxed_slice();
-        let license = CString::new("GPL").unwrap();
-        let log_level = if cfg!(debug_assertions) { 1 } else { 0 };
-        let log_size: u32 = if cfg!(debug_assertions) { 4096 } else { 0 };
-        let log_buffer = Vec::with_capacity(log_size as usize);
-        let kernel_version = 0;
-        let program_flags = 0;
-        Self {
-            program_type,
-            instructions_count,
-            instructions,
-            license,
-            log_level,
-            log_size,
-            log_buffer,
-            kernel_version,
-            program_flags,
-        }
-    }
-
-    /// XXX
-    pub fn load(mut self) -> Result<SocketFilterFd> {
-        #[repr(C)]
-        struct Attr {
-            program_type: u32,
-            instructions_count: u32,
-            instructions: u64,
-            license: u64,
-            log_level: u32,
-            log_size: u32,
-            log_buffer: u64,
-            kernel_version: u32,
-            prog_flags: u32,
-        }
-        let log_ptr = if cfg!(debug_assertions) {
-            self.log_buffer.as_mut_ptr()
-        } else {
-            null_mut()
-        };
-
-        let mut attr = Attr {
-            program_type: self.program_type,
-            instructions_count: self.instructions_count,
-            instructions: self.instructions.as_ptr() as u64,
-            license: self.license.as_ptr() as u64,
-            log_level: self.log_level,
-            log_size: self.log_size,
-            log_buffer: log_ptr as u64,
-            kernel_version: self.kernel_version,
-            prog_flags: self.program_flags,
-        };
-
-        let ptr: *mut Attr = &mut attr;
-
-        let fd = unsafe { syscall!(BPF, 5, ptr, size_of_val(&attr)) as i32 };
-
-        if cfg!(debug_assertions) {
-            unsafe {
-                forget(self.log_buffer);
-                let log =
-                    Vec::from_raw_parts(log_ptr, self.log_size as usize, self.log_size as usize);
-                debug!("BPF_PROG_LOAD log: {:}", String::from_utf8(log).unwrap());
-            }
-        }
-
-        if fd > 0 {
-            Ok(SocketFilterFd { fd })
-        } else {
-            Err(SystemError(-fd))
-        }
-    }
-}
-
 /// `sock_fprog`
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -495,28 +333,6 @@ impl SocketOption for SocketFilterProgram {
 }
 
 impl SetSocketOption for SocketFilterProgram {}
-
-/// File descriptor referring to a loaded and verified (e)BPF socket filter
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct SocketFilterFd {
-    fd: RawFd,
-}
-
-impl SocketOption for SocketFilterFd {
-    fn level() -> Level {
-        Level::Socket
-    }
-    fn name() -> Name {
-        Name::AttachBpf
-    }
-    fn optlen(&self) -> socklen_t {
-        size_of_val(self) as socklen_t
-    }
-}
-
-impl SetSocketOption for SocketFilterFd {}
-
 #[cfg(test)]
 mod tests {
     use super::*;

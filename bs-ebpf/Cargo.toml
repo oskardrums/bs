@@ -1,18 +1,16 @@
 [package]
-name = "bs-filter"
+name = "bs-ebpf"
 version = "0.1.0"
 authors = ["Oskar Matzerath <moskar.drummer@gmail.com>"]
 edition = "2018"
 
-[features]
-default = ["bs-ebpf"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-boolean_expression  = "0.3"
-eui48               = "0.4"
 libc                = "0.2"
 bs-system          = { version = "0.1", path = "../bs-system" }
-bs-ebpf          = { version = "0.1", path = "../bs-ebpf", optional = true }
 byteorder = "1.3"
 num-traits = "0.2"
 num-derive = "0.3"
+syscall = "0.2"
+log = "0.4"

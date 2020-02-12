@@ -1,4 +1,4 @@
-use crate::ebpf;
+use bs_ebpf as ebpf;
 use crate::backend::{Backend, FilterBackend};
 use bs_system::Result;
 
@@ -8,12 +8,12 @@ use bs_system::Result;
 pub struct Extended {}
 
 impl FilterBackend for Extended {
-    type SocketOption = ebpf::SocketOption;
+    type SocketOption = ebpf::SocketFilterFd;
 }
 
 impl Backend for Extended {
     type Comparison = ebpf::Comparison;
-    type Value = ebpf::Value;
+    type Value = ebpf::Operand;
     type Instruction = ebpf::Instruction;
 
     fn option_level() -> i32 {
