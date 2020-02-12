@@ -12,3 +12,6 @@ num-traits = "0.2"
 num-derive = "0.3"
 syscall = "0.2"
 log = "0.4"
+
+[lib]
+crate-type = ["staticlib"]

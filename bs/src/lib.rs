@@ -186,3 +186,6 @@ mod tests {
         );
     }
 }
+
+#[allow(unused)]
+extern crate rustc;
