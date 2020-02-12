@@ -1,9 +1,13 @@
 use libc::{
     c_void, close, fcntl, socket, EAGAIN, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD,
-    F_SETFL, MSG_DONTWAIT, O_NONBLOCK,
+    F_SETFL, O_NONBLOCK,
 };
+#[cfg(target_os = "linux")]
+use libc::MSG_DONTWAIT;
 
+#[cfg(target_os = "linux")]
 use bs_filter as filter;
+#[cfg(target_os = "linux")]
 use bs_filter::backend::Backend;
 
 #[cfg(target_os = "linux")]
@@ -31,7 +35,7 @@ pub trait SocketDesc {
 pub struct Socket<S: SocketDesc> {
     inner: S,
 }
-
+#[cfg(target_os = "linux")]
 use std::iter::FromIterator;
 impl<S: SocketDesc> Socket<S> {
     pub(crate) fn os(&self) -> i32 {
@@ -46,6 +50,9 @@ impl<S: SocketDesc> Socket<S> {
         Self::with_flags(SOCK_CLOEXEC)
     }
 
+    /// Creates a new `Socket`
+    ///
+    /// this is the recommended way to create blocking `Socket`s
     #[cfg(not(target_os = "linux"))]
     pub fn new() -> Result<Self> {
         Self::with_flags(0)
@@ -57,6 +64,7 @@ impl<S: SocketDesc> Socket<S> {
         Self::with_flags(0)
     }
 
+    /// Creates a new `Socket` without setting any creation flags
     #[cfg(not(target_os = "linux"))]
     pub fn plain() -> Result<Self> {
         Self::new()
@@ -66,14 +74,14 @@ impl<S: SocketDesc> Socket<S> {
     ///
     /// this is the recommended way to create nonblocking `Socket`s
     #[cfg(target_os = "linux")]
-    #[cfg(target_os = "linux")]
     pub fn nonblocking() -> Result<Self> {
         Self::with_flags(SOCK_CLOEXEC | SOCK_NONBLOCK)
     }
 
+    /// Creates a new nonblocking `Socket` with `O_NONBLOCK` flag set
     #[cfg(not(target_os = "linux"))]
     pub fn nonblocking() -> Result<Self> {
-        Self::new().and_then(|s| s.set_nonblocking().map_ok(|| s))
+        Self::new().and_then(|mut s| s.set_nonblocking().map(|_| s))
     }
 
     /// Creates a new nonblocking `Socket` without setting the `O_CLOEXEC` flag
@@ -99,11 +107,13 @@ impl<S: SocketDesc> Socket<S> {
         unsafe { Ok(cvt(fcntl(self.os(), F_GETFD))?) }
     }
 
+    #[allow(dead_code)]
     fn set_option(&mut self, option: impl SetSocketOption) -> Result<&mut Self> {
         option.set(self.os()).map(|_| self)
     }
 
     /// set a `Filter` to choose which packets this `Socket` will accept
+    #[cfg(target_os = "linux")]
     #[cfg(feature = "bs-filter")]
     pub fn set_filter(&mut self, filter: impl SetSocketOption) -> Result<&mut Self> {
         let f = filter::Filter::<filter::backend::Classic>::from_iter(
@@ -136,24 +146,24 @@ impl<S: SocketDesc> Socket<S> {
         self.set_flags(self.flags()? & !O_NONBLOCK)
     }
 
-    #[cfg(target_os = "linux")]
-    fn drain(&mut self) -> Result<&mut Self> {
+    fn _drain(&mut self) -> Result<()> {
+        #[cfg(target_os = "linux")]
+        let extra_flag = MSG_DONTWAIT;
+        #[cfg(not(target_os = "linux"))]
+        let extra_flag = 0;
         let mut buf = [0; DRAIN_BUFFER_SIZE];
         loop {
-            match self.recv(&mut buf, MSG_DONTWAIT) {
+            match self.recv(&mut buf, extra_flag) {
                 Err(SystemError(EWOULDBLOCK)) => {
-                    return Ok(self);
-                }
-                // rustc claims this branch is unreachable
-                // because it assumes EWOULDBLOCK == EAGAIN == 11
-                // but that's not always the case
+                    return Ok(());
+                },
                 #[allow(unreachable_patterns)]
                 Err(SystemError(EAGAIN)) => {
-                    return Ok(self);
-                }
+                    return Ok(());
+                },
                 Err(e) => {
                     return Err(e);
-                }
+                },
                 Ok(_) => {
                     continue;
                 }
@@ -161,36 +171,33 @@ impl<S: SocketDesc> Socket<S> {
         }
     }
 
+    /// Drains a socket (discards all data) until there's no data left.
+    #[cfg(target_os = "linux")]
+    pub fn drain(&mut self) -> Result<&mut Self> {
+        let res = self._drain();
+        match res {
+            Ok(_) => Ok(self),
+            Err(err) => Err(err)
+        }
+    }
+
+    /// Drains a socket (discards all data) until there's no data left.
     #[cfg(not(target_os = "linux"))]
-    fn drain(&mut self) -> Result<&mut Self> {
-        let mut buf = [0; DRAIN_BUFFER_SIZE];
+    pub fn drain(&mut self) -> Result<&mut Self> {
+
         let original_flags = self.flags()?;
-        let revert = false;
-        if !(original_flags & O_NONBLOCK) {
-            let revert = true;
+        let mut revert = false;
+        if (original_flags & O_NONBLOCK) == 0 {
+            revert = true;
         }
-        self.set_flags(original_flags | O_NONBLOCK);
-        let res = loop {
-            match self.recv(&mut buf, 0) {
-                Err(SystemError(EWOULDBLOCK)) => {
-                    return Ok(self);
-                }
-                #[allow(unreachable_patterns)]
-                Err(SystemError(EAGAIN)) => {
-                    return Ok(self);
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-                Ok(_) => {
-                    continue;
-                }
-            }
-        };
+        self.set_flags(original_flags | O_NONBLOCK)?;
+
+        let res = self._drain();
+
         if revert {
-            self.set_flags(original_flags);
+            self.set_flags(original_flags)?;
         }
-        res
+        res.map(|_| self)
     }
 
     /// XXX

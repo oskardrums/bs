@@ -29,6 +29,7 @@
 )]
 
 /// `packet(7)` sockets
+#[cfg(target_os = "linux")]
 pub mod packet;
 /// `raw(7)` sockets
 pub mod raw;
@@ -41,15 +42,20 @@ pub mod udp;
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_os = "linux")]
     use super::packet::*;
     use super::raw::*;
     use super::socket::*;
     use super::tcp::*;
     use super::udp::*;
+    #[cfg(target_os = "linux")]
     use bs_filter::backend::Classic;
+    #[cfg(target_os = "linux")]
     use bs_filter::idiom::ethernet::ether_type_arp;
+    #[cfg(target_os = "linux")]
     use libc::SOCK_NONBLOCK;
 
+    #[cfg(target_os = "linux")]
     #[test]
     #[allow(unused_results)]
     fn set_classic_filter() {
@@ -73,6 +79,7 @@ mod tests {
     }
     */
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn packet_layer2_socket_flags() {
         let mut s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
@@ -80,12 +87,14 @@ mod tests {
         assert!(s.flags().unwrap() & SOCK_NONBLOCK == SOCK_NONBLOCK);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn packet_layer2_socket_new() {
         let s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         assert!(s.os() >= 0);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn packet_layer2_socket_plain() {
         let s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
@@ -106,12 +115,14 @@ mod tests {
         assert!(s.os() >= 0);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn packet_layer3_socket_new() {
         let s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
         assert!(s.os() >= 0);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn packet_layer3_socket_plain() {
         let s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();

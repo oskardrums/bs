@@ -17,9 +17,14 @@ arch:
     - amd64
     - arm64
 
+os:
+  - linux
+  - osx
+
 script:
   - echo $TRAVIS_RUST_VERSION
-  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ];  then cargo build --verbose; cargo test --verbose --all-features ; else cargo build --verbose; cargo test --verbose -p bs -p bs-socket -p bs-filter -p bs-system -p bs-cbpf ; fi
+  - if [ "$TRAVIS_RUST_VERSION" == "nightly" && "$TRAVIS_OS_NAME" == "linux" ];  then cargo build --verbose; cargo test --verbose --all-features ; else cargo build --verbose; cargo test --verbose -p bs -p bs-socket -p bs-filter -p bs-system -p bs-cbpf ; fi
+  - if [ "$TRAVIS_RUST_VERSION" == "nightly" && "$TRAVIS_OS_NAME" == "osx" ];  then cargo build --workspace --exclude bs-ebpf --verbose; cargo test --workspace --exclude bs-ebpf --verbose --all-features --all-targets ; else cargo build --workspace --exclude bs-ebpf --verbose; cargo test --verbose -p bs -p bs-socket -p bs-filter -p bs-system -p bs-cbpf --all-targets ; fi
 
 branches:
   only:

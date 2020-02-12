@@ -2,7 +2,6 @@
 //!
 //! Provides a [full sockets API](socket/index.html) with optional support for [flexible kernel packet
 //! filtering](filter/index.html).
-//!
 //! # Examples
 //! ```
 //! # use bs_system::Result;
@@ -78,6 +77,8 @@
     missing_copy_implementations
 )]
 
+
+
 /// Packet filtering related structs and functionality
 ///
 /// see `bs-filter` for more information
@@ -91,6 +92,7 @@ pub mod filter {
 ///
 /// see `bs-socket` for more information
 pub mod socket {
+    #[cfg(target_os = "linux")]
     pub use bs_socket::packet;
     pub use bs_socket::raw;
     pub use bs_socket::socket;
@@ -98,6 +100,8 @@ pub mod socket {
     pub use bs_socket::udp;
 }
 
+/// Run tests only on linux while all tests are only linux anyway.
+#[cfg(target_os = "linux")]
 #[cfg(test)]
 mod tests {
     fn init() {

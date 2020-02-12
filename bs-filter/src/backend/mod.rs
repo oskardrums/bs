@@ -13,9 +13,9 @@ mod classic;
 #[cfg(feature = "bs-cbpf")]
 pub use classic::Classic;
 
-#[cfg(feature = "bs-ebpf")]
+#[cfg(all(target_os = "linux", feature = "bs-ebpf"))]
 mod extended;
-#[cfg(feature = "bs-ebpf")]
+#[cfg(all(target_os = "linux", feature = "bs-ebpf"))]
 pub use extended::Extended;
 
 #[doc(hidden)]
