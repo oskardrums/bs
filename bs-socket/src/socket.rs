@@ -146,7 +146,7 @@ impl<S: SocketDesc> Socket<S> {
         self.set_flags(self.flags()? & !O_NONBLOCK)
     }
 
-    fn _drain(&mut self) -> Result<()> {
+    fn _drain(&mut self) -> Result<&mut Self> {
         #[cfg(target_os = "linux")]
         let extra_flag = MSG_DONTWAIT;
         #[cfg(not(target_os = "linux"))]
@@ -155,11 +155,11 @@ impl<S: SocketDesc> Socket<S> {
         loop {
             match self.recv(&mut buf, extra_flag) {
                 Err(SystemError(EWOULDBLOCK)) => {
-                    return Ok(());
+                    return Ok(self);
                 },
                 #[allow(unreachable_patterns)]
                 Err(SystemError(EAGAIN)) => {
-                    return Ok(());
+                    return Ok(self);
                 },
                 Err(e) => {
                     return Err(e);
@@ -171,33 +171,31 @@ impl<S: SocketDesc> Socket<S> {
         }
     }
 
-    /// Drains a socket (discards all data) until there's no data left.
-    #[cfg(target_os = "linux")]
-    pub fn drain(&mut self) -> Result<&mut Self> {
-        let res = self._drain();
-        match res {
-            Ok(_) => Ok(self),
-            Err(err) => Err(err)
-        }
-    }
-
-    /// Drains a socket (discards all data) until there's no data left.
-    #[cfg(not(target_os = "linux"))]
-    pub fn drain(&mut self) -> Result<&mut Self> {
-
+    fn drain_with_flags(&mut self, flags: i32) -> Result<&mut Self> {
         let original_flags = self.flags()?;
         let mut revert = false;
-        if (original_flags & O_NONBLOCK) == 0 {
+        if (original_flags & flags) == 0 {
             revert = true;
         }
-        self.set_flags(original_flags | O_NONBLOCK)?;
-
-        let res = self._drain();
+        self.set_flags(original_flags | flags)?;
+        // We don't care about the result because it's either returned by ? or self
+        let _ = self._drain()?;
 
         if revert {
             self.set_flags(original_flags)?;
         }
-        res.map(|_| self)
+        Ok(self)
+    }
+
+
+    /// Drains a socket (discards all data) until there's no data left.
+    pub fn drain(&mut self) -> Result<&mut Self> {
+        #[cfg(target_os = "linux")]
+        let res = self._drain();
+        #[cfg(not(target_os = "linux"))]
+        let res = self.drain_with_flags(O_NONBLOCK);
+
+        res
     }
 
     /// XXX
