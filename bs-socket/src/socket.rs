@@ -1,6 +1,6 @@
 #[cfg(feature = "bs-filter")]
 use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
-use bs_system::{cvt, Result, SetSocketOption, SystemError};
+use bs_system::{cvt, Result, SystemError};
 use libc::c_void;
 use libc::{close, fcntl, socket};
 use libc::{
@@ -101,6 +101,7 @@ impl<S: SocketKind> Drop for Socket<S> {
 
 mod private {
     use super::*;
+    use bs_system::SetSocketOption;
 
     pub trait PrivateBasicSocket: Sized {
         fn os(&self) -> RawFd;
@@ -265,7 +266,7 @@ pub trait SetFilter: BasicSocket {
     }
 
     /// Flushes the socket's incoming stream and sets a new filter
-    fn set_filter(&mut self, filter: impl SetSocketOption) -> Result<&mut Self> {
+    fn set_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
         let f = Filter::<backend::Classic>::from_iter(backend::Classic::contradiction());
         let drop_filter = f.build()?;
         self.attach_filter(drop_filter)?

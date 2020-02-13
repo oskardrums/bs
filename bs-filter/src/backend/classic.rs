@@ -7,7 +7,6 @@ use bs_system::Result;
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Classic {}
 
-
 impl FilterBackend for Classic {
     type SocketOption = cbpf::SocketFilterProgram;
 }

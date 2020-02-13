@@ -1,6 +1,7 @@
 language: rust
 
 # TODO - also test *-musl targets
+# TODO - also do the fmt check
 
 rust:
     - stable

@@ -3,25 +3,24 @@
 //! (Classic / Extended). This module will be replaced
 //! with an enum when const generics land in stable rust.
 
+use crate::filter::AttachFilter;
 use bs_system::Result;
 #[cfg(target_os = "linux")]
 use bs_system::SetSocketOption;
-use crate::filter::AttachFilter;
 use std::fmt::Debug;
 use std::hash::Hash;
 #[cfg(target_os = "linux")]
 use std::os::unix::io::RawFd;
 
-#[cfg(all(feature = "bs-cbpf", target_os = "linux"))]
+#[cfg(feature = "bs-cbpf")]
 mod classic;
-#[cfg(all(feature = "bs-cbpf", target_os = "linux"))]
+#[cfg(feature = "bs-cbpf")]
 pub use classic::Classic;
 
-#[cfg(all(target_os = "linux", feature = "bs-ebpf"))]
+#[cfg(feature = "bs-ebpf")]
 mod extended;
-#[cfg(all(target_os = "linux", feature = "bs-ebpf"))]
+#[cfg(feature = "bs-ebpf")]
 pub use extended::Extended;
-
 
 #[cfg(target_os = "linux")]
 impl<T: SetSocketOption> AttachFilter for T {

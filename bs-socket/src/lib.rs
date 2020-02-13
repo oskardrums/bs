@@ -72,6 +72,10 @@
 #[cfg(unix)]
 pub mod socket;
 
+#[cfg(not(target_os = "linux"))]
+#[doc(hidden)]
+pub mod mock;
+
 /// `SocketKind` for `packet(7)` sockets
 #[cfg(target_os = "linux")]
 pub mod packet;

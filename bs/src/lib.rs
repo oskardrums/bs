@@ -78,8 +78,6 @@
     missing_copy_implementations
 )]
 
-
-
 /// Packet filtering related structs and functionality
 ///
 /// see `bs-filter` for more information
@@ -110,8 +108,8 @@ mod tests {
     }
 
     use super::filter::*;
-    use super::socket::*;
     use super::socket::socket::*;
+    use super::socket::*;
 
     #[cfg(all(target_os = "linux", feature = "bs-filter"))]
     #[test]
