@@ -1,23 +1,27 @@
+#[cfg(feature = "bs-filter")]
+use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
+use bs_system::{cvt, Result, SetSocketOption, SystemError};
 use libc::c_void;
 use libc::{close, fcntl, socket};
 use libc::{
-    EAGAIN, EINTR, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL,
-    O_NONBLOCK,
+    EAGAIN, EINTR, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, O_NONBLOCK,
 };
-#[cfg(target_os = "linux")]
-use libc::MSG_DONTWAIT;
-
-#[cfg(all(feature = "bs-filter", target_os = "linux"))]
-use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
-
-#[cfg(target_os = "linux")]
-use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
-
-#[cfg(target_os = "linux")]
 use std::iter::FromIterator;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
-use bs_system::{cvt, Result, SetSocketOption, SystemError};
+#[cfg(target_os = "linux")]
+mod flags {
+    pub(crate) use libc::MSG_DONTWAIT;
+    pub(crate) use libc::SOCK_CLOEXEC;
+    pub(crate) use libc::SOCK_NONBLOCK;
+}
+#[cfg(not(target_os = "linux"))]
+mod flags {
+    pub(crate) const MSG_DONTWAIT: usize = 0;
+    pub(crate) const SOCK_CLOEXEC: usize = 0;
+    pub(crate) const SOCK_NONBLOCK: usize = 0;
+}
+use flags::*;
 
 pub(crate) const PROTO_NULL: i32 = 0_i32;
 // TODO - use this pub(crate) const IPPROTO_L2TP: i32 = 115_i32;
@@ -39,32 +43,17 @@ pub struct Socket<S: SocketKind> {
 }
 
 impl<S: SocketKind> Socket<S> {
-    /// Creates a new `Socket` with the `O_CLOEXEC` flag set
+    /// Creates a new `Socket`
     ///
-    /// this is the recommended way to create blocking `Socket`s
-    #[cfg(target_os = "linux")]
+    /// sets the O_CLOEXEC creation flag if available for the target
     pub fn new() -> Result<Self> {
         Self::with_flags(SOCK_CLOEXEC)
     }
 
-    /// Creates a new `Socket`
-    ///
-    /// this is the recommended way to create blocking `Socket`s
-    #[cfg(not(target_os = "linux"))]
-    pub fn new() -> Result<Self> {
-        Self::with_flags(0)
-    }
-
     /// Creates a new `Socket` without setting any creation flags
     #[cfg(target_os = "linux")]
     pub fn plain() -> Result<Self> {
         Self::with_flags(0)
-    }
-
-    /// Creates a new `Socket` without setting any creation flags
-    #[cfg(not(target_os = "linux"))]
-    pub fn plain() -> Result<Self> {
-        Self::new()
     }
 
     /// Creates a new nonblocking `Socket` with the `O_CLOEXEC` and the `O_NONBLOCK` flags set
@@ -76,8 +65,11 @@ impl<S: SocketKind> Socket<S> {
     }
 
     /// Creates a new nonblocking `Socket` with `O_NONBLOCK` flag set
+    ///
+    /// this is the recommended way to create nonblocking `Socket`s
     #[cfg(not(target_os = "linux"))]
     pub fn nonblocking() -> Result<Self> {
+        // TODO - also set the O_CLOEXEC flag
         Self::new().and_then(|mut s| s.set_nonblocking().map(|_| s))
     }
 
@@ -135,7 +127,7 @@ mod private {
             }
         }
     }
-    #[cfg(target_os = "linux")]
+
     pub trait PrivateSetFilter: PrivateBasicSocket {
         fn attach_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
             filter.attach(self.os()).map(|_| self)
@@ -173,7 +165,7 @@ pub trait BasicSocket: private::PrivateBasicSocket {
         }
     }
 
-    // TODO - set blocking(bool)
+    // TODO - return Result<&mut Self> instead of Result<()> everywhere
     /// set the socket to nonblocking mode
     fn set_nonblocking(&mut self) -> Result<()> {
         self.set_flags(self.flags()? | O_NONBLOCK)
@@ -195,14 +187,14 @@ pub trait BasicSocket: private::PrivateBasicSocket {
             match self.recv(&mut buf, extra_flag) {
                 Err(SystemError(EWOULDBLOCK)) => {
                     return Ok(self);
-                },
+                }
                 #[allow(unreachable_patterns)]
                 Err(SystemError(EAGAIN)) => {
                     return Ok(self);
-                },
+                }
                 Err(e) => {
                     return Err(e);
-                },
+                }
                 Ok(_) => {
                     continue;
                 }
@@ -226,7 +218,6 @@ pub trait BasicSocket: private::PrivateBasicSocket {
         }
         Ok(self)
     }
-
 
     /// Drains a socket (discards all data) until there's no data left.
     fn drain(&mut self) -> Result<&mut Self> {
@@ -266,7 +257,7 @@ impl<S: SocketKind> FromRawFd for Socket<S> {
 
 /// Extends [`BasicSocket`](trait.BasicSocket.html) with a method to set a packet filter on the
 /// socket
-#[cfg(all(feature = "bs-filter", target_os = "linux"))]
+#[cfg(feature = "bs-filter")]
 pub trait SetFilter: BasicSocket {
     /// Sets a new socket filter in the socket, or replaces the existing filter if already set
     fn attach_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {

@@ -101,7 +101,7 @@ pub mod socket {
     pub use bs_socket::udp;
 }
 
-/// Run tests only on linux while all tests are only linux anyway.
+// TODO - remove this attribute and add non-linux tests
 #[cfg(target_os = "linux")]
 #[cfg(test)]
 mod tests {
