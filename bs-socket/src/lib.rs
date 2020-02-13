@@ -1,4 +1,44 @@
-//! Sockets-related structs and functionality for `bs`
+//! Sockets API for [`bs`](../bs/index.html)
+//!
+//! This crate contains one main generic struct - the [`Socket`](socket/struct.Socket.html).
+//!
+//! Posix's `socket(2)` API is quite problematic as there are many kinds of sockets, syscalls,
+//! options and flags, and many combinations of the above are strictly invalid
+//! (e.g. calling `accept(2)` on a `udp(7)` socket). These combinations are not necessarily unsafe,
+//! but are always unsound as they will never produce a valid result.
+//! It's up to the user to make sure no invalid operations occur at runtime.
+//!
+//! `bs-socket` creates a more pleasant and, most importantly, more sound API.
+//! `Socket`s are safe, sound, and fully capable. `bs-socket` allows for creating any kind of
+//! socket supported by the platform, as long as it makes sense. `Socket` enforces soundness of
+//! code at compile time via rust's type system by breaking the platform's sockets API to different
+//! traits, and only implementing the traits that are sound to use with each socket kind.
+//!
+//! # Examples
+//!
+//! `listen` (XXX link) is provided for [`TcpSocket`](tcp/struct.TcpSocket.html)
+//! ```ignore
+//! // no need to memorize the arguments for socket(2) :)
+//! let server_socket: Socket<TcpSocket> = Socket::new()?;
+//!
+//! // server_socket is automatically closed when dropped
+//! let client_socket = server_socket.listen(5)?.accept()?;
+//!
+//! // client_socket is `Connected`, so we can use the send method to write data to the socket
+//! client_socket.send(SOME_DATA)
+//! ```
+//!
+//! The above example will not compile we try to use a socket kind that doesn't support these
+//! methods
+//! ```ignore
+//! // that's gonna cause some problems
+//! let server_socket: Socket<UdpSocket> = Socket::new()?;
+//!
+//! // fortunately it fails at compilation :)
+//! let client_socket = server_socket.listen(5)?.accept()?;
+//!
+//! client_socket.send(SOME_DATA)
+//! ```
 
 #![deny(
     bad_style,
@@ -28,15 +68,19 @@
     missing_copy_implementations
 )]
 
-/// `packet(7)` sockets
-pub mod packet;
-/// `raw(7)` sockets
-pub mod raw;
-/// `Socket` struct and implementation
+/// Implements the main [`Socket`](socket/struct.Socket.html) struct
 pub mod socket;
-/// `tcp(7)` sockets
+
+/// `SocketKind` for `packet(7)` sockets
+pub mod packet;
+
+/// `SocketKind` for `raw(7)` sockets
+pub mod raw;
+
+/// `SocketKind` for `tcp(7)` sockets
 pub mod tcp;
-/// `udp(7)` sockets
+
+/// `SocketKind` for `udp(7)` sockets
 pub mod udp;
 
 #[cfg(test)]

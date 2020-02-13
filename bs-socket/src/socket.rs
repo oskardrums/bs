@@ -18,7 +18,7 @@ pub(crate) const PROTO_NULL: i32 = 0_i32;
 pub(crate) const DRAIN_BUFFER_SIZE: usize = 4096;
 
 #[doc(hidden)]
-pub trait SocketDesc {
+pub trait SocketKind {
     fn new(fd: RawFd) -> Self;
     fn os(&self) -> i32;
     fn domain() -> i32;
@@ -28,12 +28,12 @@ pub trait SocketDesc {
 
 /// a generic `socket(7)` type
 #[derive(Debug)]
-pub struct Socket<S: SocketDesc> {
+pub struct Socket<S: SocketKind> {
     inner: S,
 }
 
 use std::iter::FromIterator;
-impl<S: SocketDesc> Socket<S> {
+impl<S: SocketKind> Socket<S> {
     pub(crate) fn os(&self) -> i32 {
         self.inner.os()
     }
@@ -218,7 +218,7 @@ impl<S: SocketDesc> Socket<S> {
 }
 
 use libc::EINTR;
-impl<S: SocketDesc> Drop for Socket<S> {
+impl<S: SocketKind> Drop for Socket<S> {
     fn drop(&mut self) {
         loop {
             match unsafe { cvt(close(self.inner.os())) } {
@@ -230,19 +230,19 @@ impl<S: SocketDesc> Drop for Socket<S> {
     }
 }
 
-impl<S: SocketDesc> AsRawFd for Socket<S> {
+impl<S: SocketKind> AsRawFd for Socket<S> {
     fn as_raw_fd(&self) -> RawFd {
         self.os()
     }
 }
 
-impl<S: SocketDesc> IntoRawFd for Socket<S> {
+impl<S: SocketKind> IntoRawFd for Socket<S> {
     fn into_raw_fd(self) -> RawFd {
         self.os()
     }
 }
 
-impl<S: SocketDesc> FromRawFd for Socket<S> {
+impl<S: SocketKind> FromRawFd for Socket<S> {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         Self { inner: S::new(fd) }
     }

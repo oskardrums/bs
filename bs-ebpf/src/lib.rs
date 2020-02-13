@@ -258,7 +258,7 @@ const fn copy(dst: Register, src: Register) -> Instruction {
 }
 
 /// # logic
-/// * set R6 a pointer to the processed packet, necessery for eBPF direct packet access
+/// * set R6 a pointer to the processed packet, necessary for eBPF direct packet access
 pub fn initialization_sequence() -> Vec<Instruction> {
     vec![copy(Register::Context, Register::SocketBuffer)]
 }

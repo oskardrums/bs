@@ -1,4 +1,4 @@
-use crate::socket::SocketDesc;
+use crate::socket::SocketKind;
 use libc::{AF_INET, IPPROTO_RAW, SOCK_RAW};
 use std::os::unix::io::RawFd;
 
@@ -8,7 +8,7 @@ pub struct RawSocket {
     fd: RawFd,
 }
 
-impl SocketDesc for RawSocket {
+impl SocketKind for RawSocket {
     fn new(fd: RawFd) -> Self {
         Self { fd }
     }

@@ -1,4 +1,4 @@
-use crate::socket::SocketDesc;
+use crate::socket::SocketKind;
 use crate::socket::PROTO_NULL;
 use libc::{AF_INET, SOCK_SCTP};
 use std::os::unix::io::RawFd;
@@ -7,7 +7,7 @@ pub struct UdpSocket {
     fd: RawFd,
 }
 
-impl SocketDesc for SctpSocket {
+impl SocketKind for SctpSocket {
     fn new(fd: RawFd) -> Self {
         Self { fd }
     }
