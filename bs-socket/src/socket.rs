@@ -1,15 +1,18 @@
+use libc::c_void;
+use libc::{close, fcntl, socket};
 use libc::{
-    c_void, close, fcntl, socket, EAGAIN, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD,
-    F_SETFL, MSG_DONTWAIT, O_NONBLOCK,
+    EAGAIN, EINTR, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, MSG_DONTWAIT,
+    O_NONBLOCK,
 };
 
-use bs_filter as filter;
-use bs_filter::backend::Backend;
+#[cfg(feature = "bs-filter")]
+use bs_filter::{backend, backend::Backend, Filter};
 
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
+use std::iter::FromIterator;
 
 use bs_system::{cvt, Result, SetSocketOption, SystemError};
 
@@ -32,12 +35,7 @@ pub struct Socket<S: SocketKind> {
     inner: S,
 }
 
-use std::iter::FromIterator;
 impl<S: SocketKind> Socket<S> {
-    pub(crate) fn os(&self) -> i32 {
-        self.inner.os()
-    }
-
     /// Creates a new `Socket` with the `O_CLOEXEC` flag set
     ///
     /// this is the recommended way to create blocking `Socket`s
@@ -88,36 +86,73 @@ impl<S: SocketKind> Socket<S> {
             Err(e) => Err(e.into()),
         }
     }
+}
 
+impl<S: SocketKind> Drop for Socket<S> {
+    fn drop(&mut self) {
+        loop {
+            match unsafe { cvt(close(self.inner.os())) } {
+                Ok(_) => return,
+                Err(SystemError(EINTR)) => continue,
+                _ => unreachable!(),
+            }
+        }
+    }
+}
+
+mod private {
+    use super::*;
+
+    pub trait PrivateBasicSocket: Sized {
+        fn os(&self) -> RawFd;
+
+        fn set_option(&mut self, option: impl SetSocketOption) -> Result<&mut Self> {
+            option.set(self.os()).map(|_| self)
+        }
+
+        // TODO - flags to bitflags
+        fn set_flags(&mut self, flags: i32) -> Result<()> {
+            unsafe {
+                cvt(fcntl(self.os(), F_SETFL, flags))
+                    .map_err(|e| SystemError::from(e))
+                    .and(Ok(()))
+            }
+        }
+
+        // TODO - flags to bitflags
+        fn set_fd_flags(&mut self, flags: i32) -> Result<()> {
+            unsafe {
+                cvt(fcntl(self.os(), F_SETFD, flags))
+                    .map_err(|e| SystemError::from(e))
+                    .and(Ok(()))
+            }
+        }
+    }
+}
+
+impl<S: SocketKind> private::PrivateBasicSocket for Socket<S> {
+    fn os(&self) -> i32 {
+        self.inner.os()
+    }
+}
+
+/// The most basic socket operations, implemented for all socket kinds
+pub trait BasicSocket: private::PrivateBasicSocket {
     /// `fcntl(..., F_GETFL, ...)`
-    pub fn flags(&self) -> Result<i32> {
+    fn flags(&self) -> Result<i32> {
         unsafe { Ok(cvt(fcntl(self.os(), F_GETFL))?) }
     }
 
     /// `fcntl(..., F_GETFD, ...)`
-    pub fn fd_flags(&self) -> Result<i32> {
+    fn fd_flags(&self) -> Result<i32> {
         unsafe { Ok(cvt(fcntl(self.os(), F_GETFD))?) }
-    }
-
-    fn set_option(&mut self, option: impl SetSocketOption) -> Result<&mut Self> {
-        option.set(self.os()).map(|_| self)
-    }
-
-    /// set a `Filter` to choose which packets this `Socket` will accept
-    #[cfg(feature = "bs-filter")]
-    pub fn set_filter(&mut self, filter: impl SetSocketOption) -> Result<&mut Self> {
-        let f = filter::Filter::<filter::backend::Classic>::from_iter(
-            filter::backend::Classic::contradiction(),
-        );
-        let drop_filter = f.build()?;
-        self.set_option(drop_filter)?.drain()?.set_option(filter)
     }
 
     // TODO - make recv more fun and document
     // TODO - recv_from
     // TODO - send, send_from
     /// recieve a packet on the socket
-    pub fn recv(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
+    fn recv(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
         unsafe {
             let n =
                 cvt({ libc::recv(self.os(), buf.as_mut_ptr() as *mut c_void, buf.len(), flags) })?;
@@ -127,15 +162,16 @@ impl<S: SocketKind> Socket<S> {
 
     // TODO - set blocking(bool)
     /// set the socket to nonblocking mode
-    pub fn set_nonblocking(&mut self) -> Result<()> {
+    fn set_nonblocking(&mut self) -> Result<()> {
         self.set_flags(self.flags()? | O_NONBLOCK)
     }
 
     /// set the socket to blocking mode
-    pub fn set_blocking(&mut self) -> Result<()> {
+    fn set_blocking(&mut self) -> Result<()> {
         self.set_flags(self.flags()? & !O_NONBLOCK)
     }
 
+    /// flush the socket's recieve queue
     #[cfg(target_os = "linux")]
     fn drain(&mut self) -> Result<&mut Self> {
         let mut buf = [0; DRAIN_BUFFER_SIZE];
@@ -193,52 +229,23 @@ impl<S: SocketKind> Socket<S> {
         res
     }
 
-    /// XXX
-    pub fn set_cloexec(&mut self) -> Result<()> {
+    /// set's the socket `FD_CLOEXEC` flag
+    fn set_cloexec(&mut self) -> Result<()> {
         self.set_fd_flags(FD_CLOEXEC)
     }
-
-    // TODO - flags to bitflags
-    fn set_flags(&mut self, flags: i32) -> Result<()> {
-        unsafe {
-            cvt(fcntl(self.os(), F_SETFL, flags))
-                .map_err(|e| SystemError::from(e))
-                .and(Ok(()))
-        }
-    }
-
-    // TODO - flags to bitflags
-    fn set_fd_flags(&mut self, flags: i32) -> Result<()> {
-        unsafe {
-            cvt(fcntl(self.os(), F_SETFD, flags))
-                .map_err(|e| SystemError::from(e))
-                .and(Ok(()))
-        }
-    }
 }
 
-use libc::EINTR;
-impl<S: SocketKind> Drop for Socket<S> {
-    fn drop(&mut self) {
-        loop {
-            match unsafe { cvt(close(self.inner.os())) } {
-                Ok(_) => return,
-                Err(SystemError(EINTR)) => continue,
-                _ => unreachable!(),
-            }
-        }
-    }
-}
+impl<S: SocketKind> BasicSocket for Socket<S> {}
 
 impl<S: SocketKind> AsRawFd for Socket<S> {
     fn as_raw_fd(&self) -> RawFd {
-        self.os()
+        private::PrivateBasicSocket::os(self)
     }
 }
 
 impl<S: SocketKind> IntoRawFd for Socket<S> {
     fn into_raw_fd(self) -> RawFd {
-        self.os()
+        private::PrivateBasicSocket::os(&self)
     }
 }
 
@@ -247,3 +254,19 @@ impl<S: SocketKind> FromRawFd for Socket<S> {
         Self { inner: S::new(fd) }
     }
 }
+
+/// Extends [`BasicSocket`](trait.BasicSocket.html) with a method to set a packet filter on the
+/// socket
+#[cfg(feature = "bs-filter")]
+pub trait SetFilter: BasicSocket {
+    /// set a `Filter` to choose which packets this `Socket` will accept
+    fn set_filter(&mut self, filter: impl SetSocketOption) -> Result<&mut Self> {
+        let f = Filter::<backend::Classic>::from_iter(backend::Classic::contradiction());
+        let drop_filter = f.build()?;
+        self.set_option(drop_filter)?.drain()?.set_option(filter)
+    }
+}
+
+#[cfg(target_os = "linux")]
+impl<S: SocketKind> SetFilter for Socket<S> {}
+
