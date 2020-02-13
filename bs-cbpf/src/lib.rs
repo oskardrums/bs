@@ -61,7 +61,7 @@ impl SocketOption for SocketFilterProgram {
         Name::AttachFilter
     }
     fn optlen(&self) -> socklen_t {
-        // XXX - here be dragons
+        // here be lions
         #[repr(C)]
         struct S {
             len: u16,

@@ -87,7 +87,7 @@ impl SocketOption for SocketFilterFd {
 
 impl SetSocketOption for SocketFilterFd {}
 
-/// `sock_fprog`
+/// Mirrors `bpf_attr`'s `BPF_PROG_LOAD` variant
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct SocketFilterBpfAttribute {
@@ -134,8 +134,10 @@ impl SocketFilterBpfAttribute {
         }
     }
 
-    /// XXX
+    /// Calls the `bpf(2)` syscall to verify and load an eBPF program into the kernel, producings a [`SocketFilterFd`](struct.SocketFilterFd.html) applicable to a [`Socket`](../bs_socket/socket/struct.Socket.html)
     pub fn load(mut self) -> Result<SocketFilterFd> {
+        // here be dragons
+
         #[repr(C)]
         struct Attr {
             program_type: u32,
