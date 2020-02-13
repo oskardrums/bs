@@ -240,6 +240,7 @@ pub trait SetSocketOption: SocketOption {
     }
 }
 
+
 /* TODO - rethink this
 /// Extension trait for a gettable `SocketOption`
 pub trait GetSocketOption: SocketOption + From<Vec<u8>> {

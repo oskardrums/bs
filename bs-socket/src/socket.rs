@@ -6,13 +6,13 @@ use libc::{
 };
 
 #[cfg(feature = "bs-filter")]
-use bs_filter::{backend, backend::Backend, Filter};
+use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
 
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 
-use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 use std::iter::FromIterator;
+use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
 use bs_system::{cvt, Result, SetSocketOption, SystemError};
 
@@ -126,6 +126,11 @@ mod private {
                     .map_err(|e| SystemError::from(e))
                     .and(Ok(()))
             }
+        }
+    }
+    pub trait PrivateSetFilter: PrivateBasicSocket {
+        fn attach_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
+            filter.attach(self.os()).map(|_| self)
         }
     }
 }
@@ -259,14 +264,20 @@ impl<S: SocketKind> FromRawFd for Socket<S> {
 /// socket
 #[cfg(feature = "bs-filter")]
 pub trait SetFilter: BasicSocket {
-    /// set a `Filter` to choose which packets this `Socket` will accept
+    /// Sets a new socket filter in the socket, or replaces the existing filter if already set
+    fn attach_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
+        filter.attach(self.os()).map(|_| self)
+    }
+
+    /// Flushes the socket's incoming stream and sets a new filter
     fn set_filter(&mut self, filter: impl SetSocketOption) -> Result<&mut Self> {
         let f = Filter::<backend::Classic>::from_iter(backend::Classic::contradiction());
         let drop_filter = f.build()?;
-        self.set_option(drop_filter)?.drain()?.set_option(filter)
+        self.attach_filter(drop_filter)?
+            .drain()?
+            .attach_filter(filter)
     }
 }
 
 #[cfg(target_os = "linux")]
 impl<S: SocketKind> SetFilter for Socket<S> {}
-
