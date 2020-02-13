@@ -1,18 +1,19 @@
 use libc::c_void;
 use libc::{close, fcntl, socket};
 use libc::{
-    EAGAIN, EINTR, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, MSG_DONTWAIT,
+    EAGAIN, EINTR, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL,
     O_NONBLOCK,
 };
 #[cfg(target_os = "linux")]
 use libc::MSG_DONTWAIT;
 
-#[cfg(feature = "bs-filter")]
+#[cfg(all(feature = "bs-filter", target_os = "linux"))]
 use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
 
 #[cfg(target_os = "linux")]
 use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
 
+#[cfg(target_os = "linux")]
 use std::iter::FromIterator;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
@@ -134,6 +135,7 @@ mod private {
             }
         }
     }
+    #[cfg(target_os = "linux")]
     pub trait PrivateSetFilter: PrivateBasicSocket {
         fn attach_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
             filter.attach(self.os()).map(|_| self)
@@ -182,6 +184,7 @@ pub trait BasicSocket: private::PrivateBasicSocket {
         self.set_flags(self.flags()? & !O_NONBLOCK)
     }
 
+    /// Drains data, shouldn't be used from outside
     fn _drain(&mut self) -> Result<&mut Self> {
         #[cfg(target_os = "linux")]
         let extra_flag = MSG_DONTWAIT;
@@ -207,6 +210,7 @@ pub trait BasicSocket: private::PrivateBasicSocket {
         }
     }
 
+    /// Drains the socket, setting the flags beforehand and restoring the original flags afterward.
     fn drain_with_flags(&mut self, flags: i32) -> Result<&mut Self> {
         let original_flags = self.flags()?;
         let mut revert = false;
@@ -262,7 +266,7 @@ impl<S: SocketKind> FromRawFd for Socket<S> {
 
 /// Extends [`BasicSocket`](trait.BasicSocket.html) with a method to set a packet filter on the
 /// socket
-#[cfg(feature = "bs-filter")]
+#[cfg(all(feature = "bs-filter", target_os = "linux"))]
 pub trait SetFilter: BasicSocket {
     /// Sets a new socket filter in the socket, or replaces the existing filter if already set
     fn attach_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {

@@ -144,8 +144,10 @@ impl<K: Backend> Not for Predicate<K> {
     }
 }
 
+#[cfg(target_os = "linux")]
 #[cfg(test)]
 mod tests {
+
     use crate::backend::Classic;
 
     type Predicate = super::Predicate<Classic>;

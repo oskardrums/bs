@@ -4,15 +4,17 @@
 //! with an enum when const generics land in stable rust.
 
 use bs_system::Result;
+#[cfg(target_os = "linux")]
 use bs_system::SetSocketOption;
 use crate::filter::AttachFilter;
 use std::fmt::Debug;
 use std::hash::Hash;
+#[cfg(target_os = "linux")]
 use std::os::unix::io::RawFd;
 
-#[cfg(feature = "bs-cbpf")]
+#[cfg(all(feature = "bs-cbpf", target_os = "linux"))]
 mod classic;
-#[cfg(feature = "bs-cbpf")]
+#[cfg(all(feature = "bs-cbpf", target_os = "linux"))]
 pub use classic::Classic;
 
 #[cfg(all(target_os = "linux", feature = "bs-ebpf"))]
