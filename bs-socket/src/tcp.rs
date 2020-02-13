@@ -1,4 +1,4 @@
-use crate::socket::SocketDesc;
+use crate::socket::SocketKind;
 use crate::socket::PROTO_NULL;
 use libc::{AF_INET, SOCK_STREAM};
 use std::os::unix::io::RawFd;
@@ -9,7 +9,7 @@ pub struct TcpSocket {
     fd: RawFd,
 }
 
-impl SocketDesc for TcpSocket {
+impl SocketKind for TcpSocket {
     fn new(fd: RawFd) -> Self {
         Self { fd }
     }

@@ -1,4 +1,4 @@
-use crate::socket::SocketDesc;
+use crate::socket::SocketKind;
 use crate::socket::PROTO_NULL;
 use libc::{AF_INET, SOCK_DGRAM};
 use std::os::unix::io::RawFd;
@@ -9,7 +9,7 @@ pub struct UdpSocket {
     fd: RawFd,
 }
 
-impl SocketDesc for UdpSocket {
+impl SocketKind for UdpSocket {
     fn new(fd: RawFd) -> Self {
         Self { fd }
     }

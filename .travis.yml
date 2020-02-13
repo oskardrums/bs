@@ -1,6 +1,7 @@
 language: rust
 
 # TODO - also test *-musl targets
+
 rust:
     - stable
     - beta
@@ -18,8 +19,7 @@ arch:
     - arm64
 
 script:
-  - echo $TRAVIS_RUST_VERSION
-  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ];  then cargo build --verbose; cargo test --verbose --all-features ; else cargo build --verbose; cargo test --verbose -p bs -p bs-socket -p bs-filter -p bs-system -p bs-cbpf ; fi
+  - if [ "$TRAVIS_RUST_VERSION" == "nightly" ];  then cargo build --workspace --verbose --all-features; cargo test --workspace --verbose --all-features ; else cargo build --verbose; cargo test --verbose; fi
 
 branches:
   only:
