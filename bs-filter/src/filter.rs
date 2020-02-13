@@ -2,6 +2,7 @@ use crate::backend::Backend;
 use crate::program::Program;
 use bs_system::Result;
 use std::iter::FromIterator;
+use std::os::unix::io::RawFd;
 
 /// A concrete appicable socket filter
 #[derive(Debug)]
@@ -38,4 +39,9 @@ impl<K: Backend> Into<Program<K>> for Filter<K> {
     fn into(self) -> Program<K> {
         Program::from_iter(self.into_iter())
     }
+}
+
+#[doc(hidden)]
+pub trait AttachFilter {
+    fn attach(&self, socket: RawFd) -> Result<i32>;
 }

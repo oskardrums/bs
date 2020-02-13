@@ -7,3 +7,10 @@ members = [
     "bs-system",
     "bs",
 ]
+default-members = [
+    "bs-cbpf", 
+    "bs-filter", 
+    "bs-socket",
+    "bs-system",
+    "bs",
+]

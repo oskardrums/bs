@@ -1,6 +1,7 @@
 language: rust
 
 # TODO - also test *-musl targets
+
 rust:
     - stable
     - beta

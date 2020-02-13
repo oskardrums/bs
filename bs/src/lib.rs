@@ -6,6 +6,7 @@
 //! ```
 //! # use bs_system::Result;
 //! # use bs_system::SystemError as Error;
+//! # use bs_socket::socket::{BasicSocket, SetFilter};
 //! # use std::net::IpAddr;
 //! # use eui48::MacAddress;
 //! use bs::{
@@ -110,11 +111,12 @@ mod tests {
 
     use super::filter::*;
     use super::socket::*;
+    use super::socket::socket::*;
 
     #[cfg(all(target_os = "linux", feature = "bs-filter"))]
     #[test]
     fn packet_socket_arp_filter() {
-        let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
+        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
         let p = idiom::ethernet::ether_type_arp::<backend::Classic>();
         let f = p.compile().unwrap().build().unwrap();
         let _ = s.set_filter(f).unwrap();
@@ -123,7 +125,7 @@ mod tests {
     #[cfg(all(target_os = "linux", feature = "ebpf"))]
     #[test]
     fn packet_socket_ebpf_arp_filter() {
-        let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
+        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
         let p = idiom::ethernet::ether_type_arp::<backend::Extended>();
         let f = p.compile().unwrap().build().unwrap();
         let _ = s.set_filter(f).unwrap();
@@ -133,7 +135,7 @@ mod tests {
     #[test]
     fn packet_socket_ether_src() {
         init();
-        let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
+        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
         let p =
             idiom::ethernet::ether_src::<backend::Classic>("00:11:22:33:44:55".parse().unwrap());
         let f = p.compile().unwrap().build().unwrap();
@@ -144,7 +146,7 @@ mod tests {
     #[test]
     fn packet_socket_ether_host() {
         init();
-        let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
+        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
         let p =
             idiom::ethernet::ether_host::<backend::Classic>("00:11:22:33:44:55".parse().unwrap());
         let f = p.compile().unwrap().build().unwrap();
@@ -155,7 +157,7 @@ mod tests {
     #[test]
     fn packet_socket_ip_host() {
         init();
-        let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
+        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
         let _ = s.set_filter(
             idiom::ip::ip_host::<backend::Classic>("1.1.1.1".parse().unwrap())
                 .compile()
@@ -180,7 +182,7 @@ mod tests {
     #[test]
     fn packet_socket_ebpf_ip_host() {
         init();
-        let mut s: socket::Socket<packet::PacketLayer2Socket> = socket::Socket::new().unwrap();
+        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
         let _ = s.set_filter(
             idiom::ip::ip_host::<backend::Extended>("1.1.1.1".parse().unwrap())
                 .compile()
