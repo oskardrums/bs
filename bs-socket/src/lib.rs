@@ -68,17 +68,23 @@
     missing_copy_implementations
 )]
 
+use cfg_if::cfg_if;
+
 /// Implements the main [`Socket`](socket/struct.Socket.html) struct
 #[cfg(unix)]
 pub mod socket;
 
-#[cfg(not(target_os = "linux"))]
-#[doc(hidden)]
-pub mod mock;
+cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        /// `SocketKind` for `packet(7)` sockets
+        pub mod packet;
 
-/// `SocketKind` for `packet(7)` sockets
-#[cfg(target_os = "linux")]
-pub mod packet;
+    } else {
+        #[doc(hidden)]
+        pub mod mock;
+
+    }
+}
 
 /// `SocketKind` for `raw(7)` sockets
 pub mod raw;
@@ -91,107 +97,133 @@ pub mod udp;
 
 #[cfg(test)]
 mod tests {
-    #[cfg(target_os = "linux")]
-    use super::packet::*;
     use super::raw::*;
     use super::socket::*;
     use super::tcp::*;
     use super::udp::*;
-    #[cfg(target_os = "linux")]
     use bs_filter::backend::Classic;
-    #[cfg(target_os = "linux")]
     use bs_filter::idiom::ethernet::ether_type_arp;
-    #[cfg(target_os = "linux")]
-    use libc::SOCK_NONBLOCK;
     use std::os::unix::io::AsRawFd;
 
-    #[cfg(target_os = "linux")]
-    #[test]
-    #[allow(unused_results)]
-    fn set_classic_filter() {
-        // UDP is arbitrary here
-        let mut s: Socket<UdpSocket> = Socket::new().unwrap();
-        let p = ether_type_arp::<Classic>();
-        let f = p.compile().unwrap().build().unwrap();
-        s.set_filter(f).unwrap();
+    cfg_if! {
+        if #[cfg(target_os = "linux")] {
+            use super::packet::*;
+            use libc::SOCK_NONBLOCK;
+
+            #[test]
+            #[allow(unused_results)]
+            fn set_classic_filter() {
+                // UDP is arbitrary here
+                let mut s: Socket<UdpSocket> = Socket::new().unwrap();
+                let p = ether_type_arp::<Classic>();
+                let f = p.compile().unwrap().build().unwrap();
+                s.set_filter(f).unwrap();
+            }
+
+            /*
+            #[test]
+            fn set_extended_filter() {
+                let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
+                let mut buf = [0; 1024];
+                let ip = "1.1.1.1".parse().unwrap();
+                let p = ebpf::ip_host(ip);
+                let f = p.compile();
+                s.set_filter(Extended(f)).unwrap();
+                s.recv(&mut buf, 0);
+            }
+            */
+
+            #[test]
+            fn packet_layer2_socket_flags() {
+                let mut s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
+                s.set_nonblocking().unwrap();
+                assert!(s.flags().unwrap() & SOCK_NONBLOCK == SOCK_NONBLOCK);
+            }
+
+            #[test]
+            fn packet_layer2_socket_new() {
+                let s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn packet_layer2_socket_plain() {
+                let s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn packet_layer2_socket_nonblocking() {
+                let s: Socket<PacketLayer2Socket> = Socket::nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn packet_layer2_socket_plain_nonblocking() {
+                let s: Socket<PacketLayer2Socket> = Socket::plain_nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn packet_layer3_socket_new() {
+                let s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn packet_layer3_socket_plain() {
+                let s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn packet_layer3_socket_nonblocking() {
+                let s: Socket<PacketLayer2Socket> = Socket::nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn packet_layer3_socket_plain_nonblocking() {
+                let s: Socket<PacketLayer2Socket> = Socket::plain_nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+            #[test]
+            fn tcp_socket_nonblocking() {
+                let s: Socket<TcpSocket> = Socket::nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn tcp_socket_plain_nonblocking() {
+                let s: Socket<TcpSocket> = Socket::plain_nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+            #[test]
+            fn raw_socket_nonblocking() {
+                let s: Socket<RawSocket> = Socket::nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn raw_socket_plain_nonblocking() {
+                let s: Socket<RawSocket> = Socket::plain_nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn udp_socket_nonblocking() {
+                let s: Socket<UdpSocket> = Socket::nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+
+            #[test]
+            fn udp_socket_plain_nonblocking() {
+                let s: Socket<UdpSocket> = Socket::plain_nonblocking().unwrap();
+                assert!(s.as_raw_fd() >= 0);
+            }
+        }
     }
 
-    /*
-    #[test]
-    fn set_extended_filter() {
-        let mut s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
-        let mut buf = [0; 1024];
-        let ip = "1.1.1.1".parse().unwrap();
-        let p = ebpf::ip_host(ip);
-        let f = p.compile();
-        s.set_filter(Extended(f)).unwrap();
-        s.recv(&mut buf, 0);
-    }
-    */
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn packet_layer2_socket_flags() {
-        let mut s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
-        s.set_nonblocking().unwrap();
-        assert!(s.flags().unwrap() & SOCK_NONBLOCK == SOCK_NONBLOCK);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn packet_layer2_socket_new() {
-        let s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn packet_layer2_socket_plain() {
-        let s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn packet_layer2_socket_nonblocking() {
-        let s: Socket<PacketLayer2Socket> = Socket::nonblocking().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn packet_layer2_socket_plain_nonblocking() {
-        let s: Socket<PacketLayer2Socket> = Socket::plain_nonblocking().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn packet_layer3_socket_new() {
-        let s: Socket<PacketLayer2Socket> = Socket::new().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn packet_layer3_socket_plain() {
-        let s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn packet_layer3_socket_nonblocking() {
-        let s: Socket<PacketLayer2Socket> = Socket::nonblocking().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn packet_layer3_socket_plain_nonblocking() {
-        let s: Socket<PacketLayer2Socket> = Socket::plain_nonblocking().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
     #[test]
     fn raw_socket_new() {
         let s: Socket<RawSocket> = Socket::new().unwrap();
@@ -201,20 +233,6 @@ mod tests {
     #[test]
     fn raw_socket_plain() {
         let s: Socket<RawSocket> = Socket::plain().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn raw_socket_nonblocking() {
-        let s: Socket<RawSocket> = Socket::nonblocking().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn raw_socket_plain_nonblocking() {
-        let s: Socket<RawSocket> = Socket::plain_nonblocking().unwrap();
         assert!(s.as_raw_fd() >= 0);
     }
 
@@ -229,21 +247,6 @@ mod tests {
         let s: Socket<UdpSocket> = Socket::plain().unwrap();
         assert!(s.as_raw_fd() >= 0);
     }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn udp_socket_nonblocking() {
-        let s: Socket<UdpSocket> = Socket::nonblocking().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn udp_socket_plain_nonblocking() {
-        let s: Socket<UdpSocket> = Socket::plain_nonblocking().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
     #[test]
     fn tcp_socket_new() {
         let s: Socket<TcpSocket> = Socket::new().unwrap();
@@ -256,17 +259,5 @@ mod tests {
         assert!(s.as_raw_fd() >= 0);
     }
 
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn tcp_socket_nonblocking() {
-        let s: Socket<TcpSocket> = Socket::nonblocking().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn tcp_socket_plain_nonblocking() {
-        let s: Socket<TcpSocket> = Socket::plain_nonblocking().unwrap();
-        assert!(s.as_raw_fd() >= 0);
-    }
+    
 }

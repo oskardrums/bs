@@ -222,8 +222,15 @@ pub trait BasicSocket: private::PrivateBasicSocket {
 
     /// Drains a socket (discards all data) until there's no data left.
     fn drain(&mut self) -> Result<&mut Self> {
-        #[cfg(target_os = "linux")]
-        let res = self._drain();
+        if cfg!(target_os = "linux") {
+            self.drain_with_flags(MSG_DONTWAIT)
+        } else {
+            let original_flags = self.flags()?;
+            if (original_flags & flags) == flags {
+                self.drain_with_flags(0)?;
+                revert = true;
+            }
+        }
         #[cfg(not(target_os = "linux"))]
         let res = self.drain_with_flags(O_NONBLOCK);
 

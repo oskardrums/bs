@@ -11,3 +11,4 @@ default = ["bs-filter"]
 libc = "0.2"
 bs-filter = { path = "../bs-filter", version = "0.1" , optional = true }
 bs-system = { path = "../bs-system", version = "0.1" }
+cfg-if = "0.1"
