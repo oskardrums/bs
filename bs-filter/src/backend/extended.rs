@@ -9,7 +9,7 @@ use libc::EOVERFLOW;
 pub struct Extended {}
 
 impl FilterBackend for Extended {
-    type SocketOption = ebpf::SocketFilterFd;
+    type Output = ebpf::SocketFilterFd;
 }
 
 impl Backend for Extended {
@@ -30,8 +30,7 @@ impl Backend for Extended {
         ebpf::contradiction()
     }
 
-    // TODO - to provided method
-    fn into_socket_option(instructions: Vec<Self::Instruction>) -> Result<Self::SocketOption> {
+    fn build_attachable(instructions: Vec<Self::Instruction>) -> Result<Self::Output> {
         let len = instructions.len();
         if len > u16::max_value() as usize {
             return Err(SystemError(EOVERFLOW));

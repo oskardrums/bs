@@ -132,20 +132,21 @@ pub trait SetSocketOption: SocketOption {
     /// Calls `setsockopt(2)` to apply `self` to a given `socket`
     /// # Errors
     /// Will rethrow any errors produced by the underlying `setsockopt` call
-    fn set(&self, socket: RawFd) -> Result<i32> {
+    fn set(&self, socket: RawFd) -> Result<()> {
         debug!("setting option {:?} on socket {:?}", self, socket);
 
         let ptr: *const Self = self;
 
-        unsafe {
+        let _ = unsafe {
             cvt(setsockopt(
                 socket,
                 Self::level() as i32,
                 Self::name() as i32,
                 ptr as *const c_void,
                 self.optlen(),
-            ))
-        }
+            ))?
+        };
+        Ok(())
     }
 }
 

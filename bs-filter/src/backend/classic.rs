@@ -9,7 +9,8 @@ use libc::EOVERFLOW;
 pub struct Classic {}
 
 impl FilterBackend for Classic {
-    type SocketOption = cbpf::SocketFilterProgram;
+    #[cfg(target_os = "linux")]
+    type Output = cbpf::SocketFilterProgram;
 }
 
 impl Backend for Classic {
@@ -33,12 +34,12 @@ impl Backend for Classic {
         cbpf::contradiction()
     }
 
-    fn into_socket_option(instructions: Vec<Self::Instruction>) -> Result<Self::SocketOption> {
+    fn build_attachable(instructions: Vec<Self::Instruction>) -> Result<Self::Output> {
         let len = instructions.len();
         if len > u16::max_value() as usize {
             return Err(SystemError(EOVERFLOW));
         }
-        Ok(Self::SocketOption::from_vector(instructions))
+        Ok(Self::Output::from_vector(instructions))
     }
 
     fn jump(

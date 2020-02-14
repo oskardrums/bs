@@ -1,8 +1,6 @@
 //! This module contains phantom structs that represent different implementations of BPF operations
 
-use crate::filter::AttachFilter;
 use bs_system::Result;
-use cfg_if::cfg_if;
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -16,21 +14,8 @@ mod extended;
 #[cfg(feature = "bs-ebpf")]
 pub use extended::Extended;
 
-cfg_if! {
-    if #[cfg(target_os = "linux")] {
-        use bs_system::SetSocketOption;
-        use std::os::unix::io::RawFd;
-
-        impl<T: SetSocketOption> AttachFilter for T {
-            fn attach(&self, socket: RawFd) -> Result<i32> {
-                self.set(socket)
-            }
-        }
-    }
-}
-
 mod private {
-    use super::AttachFilter;
+    use crate::AttachFilter;
 
     pub trait FilterBackend {
         // TODO:
@@ -39,7 +24,7 @@ mod private {
         // change SocketOption to something more cross-compatible, e.g. Attachable.
         // Also, make the into_socket_option a generic `Filter` method (with a more suitable name)
         // and get rid of `Program` entirely.
-        type SocketOption: AttachFilter;
+        type Output: AttachFilter;
     }
 }
 
@@ -100,6 +85,6 @@ pub trait Backend: Sized + Clone + Ord + Debug + Hash + private::FilterBackend {
     /// Generates a sequence of instructions that loads four octets from a given offset in the packet.
     fn load_u32_at(offset: u32) -> Vec<Self::Instruction>;
 
-    #[doc(hidden)]
-    fn into_socket_option(instructions: Vec<Self::Instruction>) -> Result<Self::SocketOption>;
+    /// XXX
+    fn build_attachable(instructions: Vec<Self::Instruction>) -> Result<Self::Output>;
 }

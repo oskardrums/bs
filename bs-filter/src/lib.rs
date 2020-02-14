@@ -30,7 +30,6 @@
 
 pub(crate) mod filter;
 pub(crate) mod predicate;
-pub(crate) mod program;
 
 pub use filter::AttachFilter;
 pub use filter::Filter;
