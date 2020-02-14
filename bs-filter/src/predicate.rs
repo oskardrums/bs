@@ -144,6 +144,7 @@ impl<K: Backend> Not for Predicate<K> {
     }
 }
 
+// TODO - remove this and add non-linux tests when implementing Classic for e.g. BSD
 #[cfg(target_os = "linux")]
 #[cfg(test)]
 mod tests {

@@ -103,6 +103,7 @@ mod tests {
     use super::udp::*;
     use bs_filter::backend::Classic;
     use bs_filter::idiom::ethernet::ether_type_arp;
+    use cfg_if::cfg_if;
     use std::os::unix::io::AsRawFd;
 
     cfg_if! {
@@ -136,8 +137,7 @@ mod tests {
             #[test]
             fn packet_layer2_socket_flags() {
                 let mut s: Socket<PacketLayer2Socket> = Socket::plain().unwrap();
-                s.set_nonblocking().unwrap();
-                assert!(s.flags().unwrap() & SOCK_NONBLOCK == SOCK_NONBLOCK);
+                assert!(s.set_nonblocking().unwrap().flags().unwrap() & SOCK_NONBLOCK == SOCK_NONBLOCK);
             }
 
             #[test]
@@ -258,6 +258,4 @@ mod tests {
         let s: Socket<TcpSocket> = Socket::plain().unwrap();
         assert!(s.as_raw_fd() >= 0);
     }
-
-    
 }

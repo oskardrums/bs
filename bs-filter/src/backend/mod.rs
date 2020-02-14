@@ -5,12 +5,9 @@
 
 use crate::filter::AttachFilter;
 use bs_system::Result;
-#[cfg(target_os = "linux")]
-use bs_system::SetSocketOption;
+use cfg_if::cfg_if;
 use std::fmt::Debug;
 use std::hash::Hash;
-#[cfg(target_os = "linux")]
-use std::os::unix::io::RawFd;
 
 #[cfg(feature = "bs-cbpf")]
 mod classic;
@@ -22,10 +19,16 @@ mod extended;
 #[cfg(feature = "bs-ebpf")]
 pub use extended::Extended;
 
-#[cfg(target_os = "linux")]
-impl<T: SetSocketOption> AttachFilter for T {
-    fn attach(&self, socket: RawFd) -> Result<i32> {
-        self.set(socket)
+cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        use bs_system::SetSocketOption;
+        use std::os::unix::io::RawFd;
+
+        impl<T: SetSocketOption> AttachFilter for T {
+            fn attach(&self, socket: RawFd) -> Result<i32> {
+                self.set(socket)
+            }
+        }
     }
 }
 

@@ -41,7 +41,7 @@
 //!             .build()?
 //!     )?;
 //!
-//!     let got_this_many_bytes = s.recv(buffer, 0)?;
+//!     let got_this_many_bytes = s.receive(buffer, 0)?;
 //!
 //!     assert!(got_this_many_bytes > IP_HEADER_LENGTH);
 //!     assert_eq!([1, 1, 1, 1], buffer[IP_SOURCE_START..IP_SOURCE_END]);
@@ -111,7 +111,7 @@ mod tests {
     use super::socket::socket::*;
     use super::socket::*;
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(feature = "bs-filter")]
     #[test]
     fn packet_socket_arp_filter() {
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
@@ -120,7 +120,7 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-    #[cfg(all(target_os = "linux", feature = "ebpf"))]
+    #[cfg(feature = "ebpf")]
     #[test]
     fn packet_socket_ebpf_arp_filter() {
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
@@ -129,7 +129,7 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(feature = "bs-filter")]
     #[test]
     fn packet_socket_ether_src() {
         init();
@@ -140,7 +140,7 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(feature = "bs-filter")]
     #[test]
     fn packet_socket_ether_host() {
         init();
@@ -151,7 +151,7 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(feature = "bs-filter")]
     #[test]
     fn packet_socket_ip_host() {
         init();
@@ -176,7 +176,7 @@ mod tests {
         //      let _ = s.recv(&mut buf, 0);
     }
 
-    #[cfg(all(target_os = "linux", feature = "ebpf"))]
+    #[cfg(feature = "ebpf")]
     #[test]
     fn packet_socket_ebpf_ip_host() {
         init();

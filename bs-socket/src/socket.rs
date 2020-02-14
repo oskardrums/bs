@@ -1,6 +1,7 @@
 #[cfg(feature = "bs-filter")]
 use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
 use bs_system::{cvt, Result, SystemError};
+use cfg_if::cfg_if;
 use libc::c_void;
 use libc::{close, fcntl, socket};
 use libc::{
@@ -9,19 +10,13 @@ use libc::{
 use std::iter::FromIterator;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
-#[cfg(target_os = "linux")]
-mod flags {
-    pub(crate) use libc::MSG_DONTWAIT;
-    pub(crate) use libc::SOCK_CLOEXEC;
-    pub(crate) use libc::SOCK_NONBLOCK;
+cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        pub(crate) use libc::MSG_DONTWAIT;
+        pub(crate) use libc::SOCK_CLOEXEC;
+        pub(crate) use libc::SOCK_NONBLOCK;
+    }
 }
-#[cfg(not(target_os = "linux"))]
-mod flags {
-    pub(crate) const MSG_DONTWAIT: usize = 0;
-    pub(crate) const SOCK_CLOEXEC: usize = 0;
-    pub(crate) const SOCK_NONBLOCK: usize = 0;
-}
-use flags::*;
 
 pub(crate) const PROTO_NULL: i32 = 0_i32;
 // TODO - use this pub(crate) const IPPROTO_L2TP: i32 = 115_i32;
@@ -43,40 +38,49 @@ pub struct Socket<S: SocketKind> {
 }
 
 impl<S: SocketKind> Socket<S> {
-    /// Creates a new `Socket`
-    ///
-    /// sets the O_CLOEXEC creation flag if available for the target
-    pub fn new() -> Result<Self> {
-        Self::with_flags(SOCK_CLOEXEC)
-    }
+    cfg_if! {
+        if #[cfg(target_os = "linux")] {
 
-    /// Creates a new `Socket` without setting any creation flags
-    #[cfg(target_os = "linux")]
-    pub fn plain() -> Result<Self> {
-        Self::with_flags(0)
-    }
+            /// Creates a new `Socket`
+            ///
+            /// sets the O_CLOEXEC creation flag if available for the target
+            pub fn new() -> Result<Self> {
+                Self::with_flags(SOCK_CLOEXEC)
+            }
 
-    /// Creates a new nonblocking `Socket` with the `O_CLOEXEC` and the `O_NONBLOCK` flags set
-    ///
-    /// this is the recommended way to create nonblocking `Socket`s
-    #[cfg(target_os = "linux")]
-    pub fn nonblocking() -> Result<Self> {
-        Self::with_flags(SOCK_CLOEXEC | SOCK_NONBLOCK)
-    }
+            /// Creates a new `Socket` without setting any creation flags
+            pub fn plain() -> Result<Self> {
+                Self::with_flags(0)
+            }
 
-    /// Creates a new nonblocking `Socket` with `O_NONBLOCK` flag set
-    ///
-    /// this is the recommended way to create nonblocking `Socket`s
-    #[cfg(not(target_os = "linux"))]
-    pub fn nonblocking() -> Result<Self> {
-        // TODO - also set the O_CLOEXEC flag
-        Self::new().and_then(|mut s| s.set_nonblocking().map(|_| s))
-    }
+            /// Creates a new nonblocking `Socket` with the `O_CLOEXEC` and the `O_NONBLOCK` flags set
+            ///
+            /// this is the recommended way to create nonblocking `Socket`s
+            pub fn nonblocking() -> Result<Self> {
+                Self::with_flags(SOCK_CLOEXEC | SOCK_NONBLOCK)
+            }
 
-    /// Creates a new nonblocking `Socket` without setting the `O_CLOEXEC` flag
-    #[cfg(target_os = "linux")]
-    pub fn plain_nonblocking() -> Result<Self> {
-        Self::with_flags(SOCK_NONBLOCK)
+           /// Creates a new nonblocking `Socket` without setting the `O_CLOEXEC` flag
+            pub fn plain_nonblocking() -> Result<Self> {
+                Self::with_flags(SOCK_NONBLOCK)
+            }
+        } else {
+
+            /// Creates a new `Socket`
+            ///
+            /// sets the O_CLOEXEC creation flag if available for the target
+            pub fn new() -> Result<Self> {
+                Self::with_flags(0)
+            }
+
+            /// Creates a new nonblocking `Socket` with `O_NONBLOCK` flag set
+            ///
+            /// this is the recommended way to create nonblocking `Socket`s
+            pub fn nonblocking() -> Result<Self> {
+                // TODO - also set the O_CLOEXEC flag
+                Self::new().and_then(|mut s| s.set_nonblocking().map(|_| s))
+            }
+        }
     }
 
     fn with_flags(flags: i32) -> Result<Self> {
@@ -111,11 +115,11 @@ mod private {
         }
 
         // TODO - flags to bitflags
-        fn set_flags(&mut self, flags: i32) -> Result<()> {
+        fn set_flags(&mut self, flags: i32) -> Result<&mut Self> {
             unsafe {
                 cvt(fcntl(self.os(), F_SETFL, flags))
                     .map_err(|e| SystemError::from(e))
-                    .and(Ok(()))
+                    .and(Ok(self))
             }
         }
 
@@ -125,6 +129,42 @@ mod private {
                 cvt(fcntl(self.os(), F_SETFD, flags))
                     .map_err(|e| SystemError::from(e))
                     .and(Ok(()))
+            }
+        }
+
+        // TODO - make recv more fun and document
+        // TODO - recv_from
+        // TODO - send, send_from
+        fn recv(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
+            unsafe {
+                let n = cvt({
+                    libc::recv(self.os(), buf.as_mut_ptr() as *mut c_void, buf.len(), flags)
+                })?;
+                Ok(n as usize)
+            }
+        }
+
+        fn recv_until_empty(&mut self, flags: i32) -> Result<&mut Self> {
+            let mut buf = [0; DRAIN_BUFFER_SIZE];
+            loop {
+                match self.recv(&mut buf, flags) {
+                    Err(SystemError(EWOULDBLOCK)) => {
+                        return Ok(self);
+                    }
+                    // rustc claims this branch is unreachable
+                    // because it assumes EWOULDBLOCK == EAGAIN == 11
+                    // but that's not always the case
+                    #[allow(unreachable_patterns)]
+                    Err(SystemError(EAGAIN)) => {
+                        return Ok(self);
+                    }
+                    Err(e) => {
+                        return Err(e);
+                    }
+                    Ok(_) => {
+                        continue;
+                    }
+                }
             }
         }
     }
@@ -154,87 +194,37 @@ pub trait BasicSocket: private::PrivateBasicSocket {
         unsafe { Ok(cvt(fcntl(self.os(), F_GETFD))?) }
     }
 
-    // TODO - make recv more fun and document
-    // TODO - recv_from
-    // TODO - send, send_from
-    /// recieve a packet on the socket
-    fn recv(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
-        unsafe {
-            let n =
-                cvt({ libc::recv(self.os(), buf.as_mut_ptr() as *mut c_void, buf.len(), flags) })?;
-            Ok(n as usize)
-        }
-    }
-
     // TODO - return Result<&mut Self> instead of Result<()> everywhere
     /// set the socket to nonblocking mode
-    fn set_nonblocking(&mut self) -> Result<()> {
+    fn set_nonblocking(&mut self) -> Result<&mut Self> {
         self.set_flags(self.flags()? | O_NONBLOCK)
     }
 
     /// set the socket to blocking mode
-    fn set_blocking(&mut self) -> Result<()> {
+    fn set_blocking(&mut self) -> Result<&mut Self> {
         self.set_flags(self.flags()? & !O_NONBLOCK)
     }
 
-    /// Drains data, shouldn't be used from outside
-    fn _drain(&mut self) -> Result<&mut Self> {
-        #[cfg(target_os = "linux")]
-        let extra_flag = MSG_DONTWAIT;
-        #[cfg(not(target_os = "linux"))]
-        let extra_flag = 0;
-        let mut buf = [0; DRAIN_BUFFER_SIZE];
-        loop {
-            match self.recv(&mut buf, extra_flag) {
-                Err(SystemError(EWOULDBLOCK)) => {
-                    return Ok(self);
-                }
-                #[allow(unreachable_patterns)]
-                Err(SystemError(EAGAIN)) => {
-                    return Ok(self);
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-                Ok(_) => {
-                    continue;
-                }
-            }
-        }
+    /// Receives a packet on the socket
+    fn receive(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
+        self.recv(buf, flags)
     }
 
-    /// Drains the socket, setting the flags beforehand and restoring the original flags afterward.
-    fn drain_with_flags(&mut self, flags: i32) -> Result<&mut Self> {
-        let original_flags = self.flags()?;
-        let mut revert = false;
-        if (original_flags & flags) == 0 {
-            revert = true;
-        }
-        self.set_flags(original_flags | flags)?;
-        // We don't care about the result because it's either returned by ? or self
-        let _ = self._drain()?;
-
-        if revert {
-            self.set_flags(original_flags)?;
-        }
-        Ok(self)
-    }
-
-    /// Drains a socket (discards all data) until there's no data left.
+    /// Flushes the socket's receive queue
     fn drain(&mut self) -> Result<&mut Self> {
         if cfg!(target_os = "linux") {
-            self.drain_with_flags(MSG_DONTWAIT)
+            self.recv_until_empty(MSG_DONTWAIT)
         } else {
             let original_flags = self.flags()?;
-            if (original_flags & flags) == flags {
-                self.drain_with_flags(0)?;
-                revert = true;
+            let is_blocking = original_flags & O_NONBLOCK == 0;
+            if is_blocking {
+                self.set_flags(original_flags | O_NONBLOCK)?
+                    .recv_until_empty(0)?
+                    .set_flags(original_flags)
+            } else {
+                Ok(self)
             }
         }
-        #[cfg(not(target_os = "linux"))]
-        let res = self.drain_with_flags(O_NONBLOCK);
-
-        res
     }
 
     /// set's the socket `FD_CLOEXEC` flag
