@@ -1,10 +1,42 @@
-use bs_system::{consts::*, Level, Name, Result, SetSocketOption, SocketOption, SystemError};
+//! Classic BPF implementation
+//!
+//! Provides basic BPF building blocks used by [`bs-filter`] when used with the [`Classic`] backend.
+//!
+//! [`bs-filter`]: ../bs-filter/index.html
+//! [`Classic`]: ../bs-filter/backend/struct.Classic.html
+
+#![deny(
+    bad_style,
+    const_err,
+    dead_code,
+    improper_ctypes,
+    non_shorthand_field_patterns,
+    no_mangle_generic_items,
+    overflowing_literals,
+    path_statements,
+    patterns_in_fns_without_body,
+    private_in_public,
+    unconditional_recursion,
+    unused,
+    unused_allocation,
+    unused_comparisons,
+    unused_parens,
+    while_true,
+    missing_debug_implementations,
+    missing_docs,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_extern_crates,
+    unused_import_braces,
+    unused_qualifications,
+    unused_results,
+    missing_copy_implementations
+)]
+
+use bs_system::{consts::*, Level, Name, SetSocketOption, SocketOption};
 use libc::socklen_t;
-use libc::{EOVERFLOW, SOL_SOCKET};
 use std::hash::Hash;
 use std::mem::size_of;
-pub const OPTION_LEVEL: i32 = SOL_SOCKET;
-pub const OPTION_NAME: i32 = 26; // SO_ATTACH_FILTER;
 
 /// `sock_filter`
 #[repr(C)]
@@ -16,6 +48,7 @@ pub struct SocketFilter {
     k: u32,
 }
 
+/// `sock_filter` alias
 pub type Instruction = SocketFilter;
 
 impl SocketFilter {
@@ -73,22 +106,27 @@ impl SocketOption for SocketFilterProgram {
 
 impl SetSocketOption for SocketFilterProgram {}
 
+/// Different kinds of comparisons to perform upon `BPF_JMP` instructions
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub enum Comparison {
+    /// always true
     Always = 0x00,
+    /// true if operands equal
     Equal = 0x10,
+    /// true if the first operand is greater then the second
     GreaterThan = 0x20,
+    /// true if the first operand is greater or equal to the second
     GreaterEqual = 0x30,
+    /// true if the first operand bitmasked with second operand is greater then 0
     AndMask = 0x40,
+    #[doc(hidden)]
     Unknown,
 }
 
 // TODO - use FromPrimitive instead
 impl From<u8> for Comparison {
     fn from(value: u8) -> Self {
-        // TODO - rethink this part - maybe mask the input
-        // also change to tryfrom and return err when nothing fits
         match value {
             0x00 => Self::Always,
             0x10 => Self::Equal,
@@ -100,34 +138,42 @@ impl From<u8> for Comparison {
     }
 }
 
+/// type of `k` operand
 pub type Value = u32;
 
 const DROP: Instruction = Instruction::new((BPF_RET | BPF_K) as _, 0, 0, 0);
 const RETURN_A: Instruction = Instruction::new((BPF_RET | BPF_A) as _, 0, 0, 0);
 const LOAD_LENGTH: Instruction = Instruction::new((BPF_LD | BPF_LEN | BPF_W) as _, 0, 0, 0);
 
-pub fn initialization_sequence() -> Vec<Instruction> {
-    Default::default()
-}
+/// Generates a sequence of instructions that implement the exit logic of a programs.
+///
+/// BPF programs return value is interpreted as an unsigned length to which the packet will be
+/// truncated, where 0 means "drop the packet".
+/// Unlike libpcap, `bs-cbpf` doesn't truncate the packet to an arbitrary size, but instead
+/// fetches the inspected packet total length and returns that value when packets are determined as
+/// valid by the program's logic.
+/// So `bs-cbpf`'s exit sequence has 2 entry points corresponding to the 2 possible outcomes
+/// of the program - let the packet PASS, or DROP the packet.
+///
+/// # Return Value
+/// Return value is a tuple containing a `Vec<Instruction>` representing the exit sequence, an
+/// offset in the sequence pointing to the PASS entry point, and an offset in the sequence pointing
+/// to the DROP entry point.
 pub fn return_sequence() -> (Vec<Instruction>, usize, usize) {
-    // TODO - undo magic
     (vec![DROP, RETURN_A, LOAD_LENGTH], 0, 2)
 }
+
+/// Generates a sequence of instructions that passes the entire packet.
 pub fn teotology() -> Vec<Instruction> {
     vec![RETURN_A, LOAD_LENGTH]
 }
+
+/// Generates a sequence of instructions that drops the packet.
 pub fn contradiction() -> Vec<Instruction> {
     vec![DROP]
 }
 
-pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketFilterProgram> {
-    let len = instructions.len();
-    if len > u16::max_value() as usize {
-        return Err(SystemError(EOVERFLOW));
-    }
-    Ok(SocketFilterProgram::from_vector(instructions))
-}
-
+/// Generates a sequence of instructions that implements a conditional jump.
 pub fn jump(comparison: Comparison, operand: u32, jt: usize, jf: usize) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_JMP as u8 | comparison as u8 | BPF_K as u8) as _,
@@ -136,6 +182,8 @@ pub fn jump(comparison: Comparison, operand: u32, jt: usize, jf: usize) -> Vec<I
         operand,
     )]
 }
+
+/// Generates a sequence of instructions that loads one octet from a given offset in the packet.
 pub fn load_u8_at(offset: u32) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_ABS | BPF_LD | BPF_B) as _,
@@ -145,6 +193,7 @@ pub fn load_u8_at(offset: u32) -> Vec<Instruction> {
     )]
 }
 
+/// Generates a sequence of instructions that loads two octets from a given offset in the packet.
 pub fn load_u16_at(offset: u32) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_ABS | BPF_LD | BPF_H) as _,
@@ -154,6 +203,7 @@ pub fn load_u16_at(offset: u32) -> Vec<Instruction> {
     )]
 }
 
+/// Generates a sequence of instructions that loads four octets from a given offset in the packet.
 pub fn load_u32_at(offset: u32) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_ABS | BPF_LD | BPF_W) as _,

@@ -1,5 +1,3 @@
-//! Socket options related interface and functionality
-//!
 //! Used by `bs-socket` to set `SocketOption`s for `Socket`s
 //! including BPF filters created with `bs-filter`
 //!
@@ -54,108 +52,19 @@
 
 #[doc(hidden)]
 pub mod consts;
+mod cvt;
 
-/// Shamelessly copied from `nix`'s `errno` module
-pub(crate) mod errno {
-    use libc::c_int;
-
-    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "freebsd"))]
-    unsafe fn errno_location() -> *mut c_int {
-        extern "C" {
-            fn __error() -> *mut c_int;
-        }
-        __error()
-    }
-
-    #[cfg(target_os = "bitrig")]
-    fn errno_location() -> *mut c_int {
-        extern "C" {
-            fn __errno() -> *mut c_int;
-        }
-        unsafe { __errno() }
-    }
-
-    #[cfg(target_os = "dragonfly")]
-    unsafe fn errno_location() -> *mut c_int {
-        extern "C" {
-            fn __dfly_error() -> *mut c_int;
-        }
-        __dfly_error()
-    }
-
-    #[cfg(any(target_os = "openbsd", target_os = "netbsd"))]
-    unsafe fn errno_location() -> *mut c_int {
-        extern "C" {
-            fn __errno() -> *mut c_int;
-        }
-        __errno()
-    }
-
-    #[cfg(target_os = "linux")]
-    unsafe fn errno_location() -> *mut c_int {
-        extern "C" {
-            fn __errno_location() -> *mut c_int;
-        }
-        __errno_location()
-    }
-
-    #[cfg(target_os = "android")]
-    unsafe fn errno_location() -> *mut c_int {
-        extern "C" {
-            fn __errno() -> *mut c_int;
-        }
-        __errno()
-    }
-
-    /// Sets the platform-specific errno to no-error
-    #[allow(dead_code)]
-    unsafe fn clear() -> () {
-        *errno_location() = 0;
-    }
-
-    /// Returns the platform-specific value of errno
-    pub fn errno() -> i32 {
-        unsafe { *errno_location() }
-    }
-}
-
-// TODO - PR to cvt/std::io::Result
-#[doc(hidden)]
-pub trait IsMinusOne {
-    fn is_minus_one(&self) -> bool;
-}
-
-macro_rules! impl_is_minus_one {
-    ($($t:ident)*) => ($(impl IsMinusOne for $t {
-        fn is_minus_one(&self) -> bool {
-            *self == -1
-        }
-    })*)
-}
-
-impl_is_minus_one! { i8 i16 i32 i64 isize }
-
-/// like `cvt::cvt`, but uses the more expresive `SystemError`
-/// instead of `std::io::Error`
-pub fn cvt<T: IsMinusOne>(t: T) -> Result<T> {
-    if t.is_minus_one() {
-        Err(SystemError(errno()))
-    } else {
-        Ok(t)
-    }
-}
-
-use errno::errno;
-use libc::c_void;
-use libc::socklen_t;
+pub use cvt::cvt;
 use libc::EBADF;
 use libc::SOL_SOCKET;
-//use libc::{getsockopt, setsockopt};
-use libc::setsockopt;
+use libc::{c_void, socklen_t};
+use libc::{getsockopt, setsockopt};
 use log::debug;
+use std::convert::TryFrom;
 use std::error;
 use std::fmt;
 use std::fmt::Debug;
+use std::mem::size_of;
 use std::os::unix::io::RawFd;
 
 /// `bs-system`'s custom `Error` type, returned by `SocketOption::set`/`get`.
@@ -240,11 +149,14 @@ pub trait SetSocketOption: SocketOption {
     }
 }
 
-/* TODO - rethink this
 /// Extension trait for a gettable `SocketOption`
-pub trait GetSocketOption: SocketOption + From<Vec<u8>> {
+pub trait GetSocketOption: SocketOption + TryFrom<Vec<u8>>
+where
+    Self::Error: Into<SystemError>,
+{
     /// Calls `getsockopt(2)` to retrieve a `SocktOption` of the given socket.
-    /// From<Vec<u8>> is required due to safe implementation considerations.
+    /// From<Vec<u8>> is required because it is currently demanded for the safety of the
+    /// implementation, this restriction may be lifted in a future revision.
     /// # Errors
     /// Will rethrow any errors produced by the underlying `getsockopt` call
     // TODO - test GetSocketOption
@@ -252,35 +164,22 @@ pub trait GetSocketOption: SocketOption + From<Vec<u8>> {
     fn get(socket: RawFd) -> Result<Self> {
         let mut optlen = size_of::<Self>();
         let optlen_ptr: *mut usize = &mut optlen;
-        let mut new = Vec::<u8>::with_capacity(optlen);
+        let mut placeholder = Vec::<u8>::with_capacity(optlen);
 
-        unsafe {
+        (unsafe {
             cvt(getsockopt(
                 socket,
                 Self::level() as i32,
                 Self::name() as i32,
-                new.as_mut_ptr() as *mut c_void,
+                placeholder.as_mut_ptr() as *mut c_void,
                 optlen_ptr as *mut u32,
-            ));
-        };
-        Ok(new)
+            ))
+        })
+        .and(Self::try_from(placeholder).map_err(|e| e.into()))
     }
 }
-*/
+
 #[cfg(test)]
 mod tests {
-    /*
-    use super::*;
-    #[test]
-    fn set_sock_fprog_expect_ebadf() {
-        let expected = Err(SystemError(EBADF));
-        let prog = SocketFilterProgram::from_vector(Vec::new());
-        assert_eq!(prog.set(-1), expected);
-        assert_eq!(prog.set(-321), expected);
-        assert_eq!(prog.set(-3214), expected);
-        assert_eq!(prog.set(-55555), expected);
-        assert_eq!(prog.set(55555), expected);
-        assert_eq!(prog.set(3214), expected);
-    }
-    */
+    // TODO - test bs-system
 }

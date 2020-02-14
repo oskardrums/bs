@@ -124,11 +124,11 @@ mod private {
         }
 
         // TODO - flags to bitflags
-        fn set_fd_flags(&mut self, flags: i32) -> Result<()> {
+        fn set_fd_flags(&mut self, flags: i32) -> Result<&mut Self> {
             unsafe {
                 cvt(fcntl(self.os(), F_SETFD, flags))
                     .map_err(|e| SystemError::from(e))
-                    .and(Ok(()))
+                    .map(|_| self)
             }
         }
 
@@ -194,7 +194,6 @@ pub trait BasicSocket: private::PrivateBasicSocket {
         unsafe { Ok(cvt(fcntl(self.os(), F_GETFD))?) }
     }
 
-    // TODO - return Result<&mut Self> instead of Result<()> everywhere
     /// set the socket to nonblocking mode
     fn set_nonblocking(&mut self) -> Result<&mut Self> {
         self.set_flags(self.flags()? | O_NONBLOCK)
@@ -228,7 +227,7 @@ pub trait BasicSocket: private::PrivateBasicSocket {
     }
 
     /// set's the socket `FD_CLOEXEC` flag
-    fn set_cloexec(&mut self) -> Result<()> {
+    fn set_cloexec(&mut self) -> Result<&mut Self> {
         self.set_fd_flags(FD_CLOEXEC)
     }
 }

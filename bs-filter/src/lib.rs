@@ -41,7 +41,8 @@ pub use predicate::Predicate;
 pub mod backend;
 
 /// Ready-made filtering packet idioms, ranging from low level (e.g. `offset_equals_*` idioms) to
-/// higher level carefully implemented widely used filters (e.g. `ip_host`)
+/// higher level carefully implemented widely used filters (e.g.
+/// [`ip_host`](idiom/ip/fn.ip_host.html))
 ///
 /// idioms are implemented as `Predicate`s so they can be freely combined into more sophisticated
 /// and/or specific filters

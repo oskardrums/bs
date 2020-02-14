@@ -1,13 +1,45 @@
+//! Extended BPF implementation
+//!
+//! Provides basic BPF building blocks used by [`bs-filter`] when used with the [`Extended`] backend.
+//!
+//! [`bs-filter`]: ../bs-filter/index.html
+//! [`Extended`]: ../bs-filter/backend/struct.Extended.html
+
+#![deny(
+    bad_style,
+    const_err,
+    dead_code,
+    improper_ctypes,
+    non_shorthand_field_patterns,
+    no_mangle_generic_items,
+    overflowing_literals,
+    path_statements,
+    patterns_in_fns_without_body,
+    private_in_public,
+    unconditional_recursion,
+    unused,
+    unused_allocation,
+    unused_comparisons,
+    unused_parens,
+    while_true,
+    missing_debug_implementations,
+    missing_docs,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_extern_crates,
+    unused_import_braces,
+    unused_qualifications,
+    unused_results,
+    missing_copy_implementations
+)]
+
 use bs_system::{consts::*, Level, Name, Result, SetSocketOption, SocketOption, SystemError};
 use libc::socklen_t;
-use libc::{EOVERFLOW, SOL_SOCKET};
 use log::debug;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive as FromVal;
 use std::mem::size_of_val;
 use std::os::unix::io::RawFd;
-pub const OPTION_LEVEL: i32 = SOL_SOCKET;
-pub const OPTION_NAME: i32 = 50; // SO_ATTACH_BPF;
 
 /// `bpf_insn`
 #[repr(C)]
@@ -20,27 +52,54 @@ pub struct Instruction {
     imm: i32,
 }
 
-#[doc(hidden)]
+/// An eBPF virtual machine register, identified by its index.
+#[allow(dead_code)]
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Register {
+    /// R0: The return register, interpreted as the program's return value at exit.
+    ///
+    /// Must be set by the program before exiting.
     Ret = 0,
+
+    /// The context register, set by the kernel to a pointer to the program's sole argument, repreenting the the program's
+    /// context.
+    ///
+    /// Initiated by the kernel on startup.
+    ///
+    /// R1: For socket filters this is a pointer `struct sk_buff`.
     Context = 1,
+
+    /// R2-5: arguments for kernel helper functions.
     Arg1 = 2,
+    #[allow(missing_docs)]
     Arg2 = 3,
+    #[allow(missing_docs)]
     Arg3 = 4,
+    #[allow(missing_docs)]
     Arg4 = 5,
+
+    /// R6: Used by socket filter programs for direct packet access.
+    ///
+    /// Must be set to a `struct sk_buff *`
     SocketBuffer = 6,
+
+    /// General use registers that are never altered by kernel helper functions.
     Gen1 = 7,
+    #[allow(missing_docs)]
     Gen2 = 8,
+    #[allow(missing_docs)]
     Gen3 = 9,
+
+    /// Contains a read-only pointer to the program's stack frame.
+    ///
+    /// Initiated by the kernel on startup.
     FramePointer = 10,
 }
 
 impl Register {
-    #[doc(hidden)]
     #[allow(non_upper_case_globals)]
-    pub const None: Self = Self::Ret;
+    const None: Self = Self::Ret;
 }
 
 impl Instruction {
@@ -56,7 +115,7 @@ impl Instruction {
 
     /// Helper function, creates a new `Instruction` with given `code`
     /// other parameters (registers, `off`, `imm`) are set to 0
-    pub const fn from_code(code: u8) -> Self {
+    const fn from_code(code: u8) -> Self {
         Self {
             code,
             regs: 0,
@@ -189,22 +248,39 @@ impl SocketFilterBpfAttribute {
     }
 }
 
+/// Different kinds of comparisons to perform upon `BPF_JMP` instructions
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd, FromPrimitive, ToPrimitive)]
 pub enum Comparison {
-    // TODO - 32 bit comparisons
+    /// always true
     Always = 0x00,
+    /// true if operands equal
     Equal = 0x10,
+    /// true if the first operand is greater then the second
     GreaterThan = 0x20,
+    /// true if the first operand is greater or equal to the second
     GreaterEqual = 0x30,
+    /// true if the first operand bitmasked with second operand is greater then 0
     AndMask = 0x40,
+    /// true if the operands differ
     NotEqual = 0x50,
+    /// true if the first operand is greater then the second (operands are treated as signed 64-bit
+    /// integers)
     SignedGreaterThan = 0x60,
+    /// true if the first operand is greater or equal to the second (operands are treated as signed 64-bit
+    /// integers)
     SignedGreaterEqual = 0x70,
+    /// true if the first operand is lesser then the second
     LesserThan = 0xa0,
+    /// true if the first operand is lesser or equal to the second
     LesserEqual = 0xb0,
+    /// true if the first operand is lesser then the second (operands are treated as signed 64-bit
+    /// integers)
     SignedLesserThan = 0xc0,
+    /// true if the first operand is lesser or equal to the second (operands are treated as signed 64-bit
     SignedLesserEqual = 0xd0,
+    // TODO - 32 bit comparisons
+    #[doc(hidden)]
     Unknown,
 }
 
@@ -214,11 +290,16 @@ impl From<u8> for Comparison {
     }
 }
 
+/// A couple of operands to be compared by [`jump`]
+///
+/// [`jump`]: function.jump.html
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub enum Operand {
+    /// Compare a `Register` to an immediate value
     RegAndImm(Register, i32),
 
     // XXX - remove the allow deriviate when no longer needed
+    /// Compare two `Register`s
     #[allow(dead_code)]
     DstAndSrc(Register, Register),
 }
@@ -257,12 +338,12 @@ const fn copy(dst: Register, src: Register) -> Instruction {
     Instruction::new((BPF_ALU64 | BPF_MOV | BPF_X) as u8, dst, src, 0, 0)
 }
 
-/// # logic
-/// * set R6 a pointer to the processed packet, necessary for eBPF direct packet access
+/// Generates a sequence of instructions that sets R6 to a pointer to the processed packet, necessary for any eBPF direct packet access
 pub fn initialization_sequence() -> Vec<Instruction> {
     vec![copy(Register::Context, Register::SocketBuffer)]
 }
 
+/// Generates a sequence of instructions that implement the exit logic of a programs.
 pub fn return_sequence() -> (Vec<Instruction>, usize, usize) {
     let res = vec![
         EXIT,
@@ -273,19 +354,14 @@ pub fn return_sequence() -> (Vec<Instruction>, usize, usize) {
     (res, 0, 2)
 }
 
+/// Generates a sequence of instructions that passes the entire packet.
 pub fn teotology() -> Vec<Instruction> {
     vec![EXIT, load_packet_length(Register::Ret)]
 }
+
+/// Generates a sequence of instructions that drops the packet.
 pub fn contradiction() -> Vec<Instruction> {
     vec![copy_imm(Register::Ret, 0)]
-}
-
-pub fn into_socket_option(instructions: Vec<Instruction>) -> Result<SocketFilterFd> {
-    let len = instructions.len();
-    if len > u16::max_value() as usize {
-        return Err(SystemError(EOVERFLOW));
-    }
-    Ok(SocketFilterBpfAttribute::new(instructions).load()?)
 }
 
 const fn jump_always(offset: i16) -> Instruction {
@@ -318,7 +394,7 @@ const fn jump_reg(comp: Comparison, dst: Register, src: Register, offset: i16) -
     )
 }
 
-/// jump sequence
+/// Generates a sequence of instructions that implements a conditional jump.
 pub fn jump(comparison: Comparison, operand: Operand, jt: usize, jf: usize) -> Vec<Instruction> {
     let distance_to_true_label: i16 = jt as i16 + 1;
     match operand {
@@ -333,6 +409,7 @@ pub fn jump(comparison: Comparison, operand: Operand, jt: usize, jf: usize) -> V
     }
 }
 
+/// Generates a sequence of instructions that loads one octet from a given offset in the packet.
 pub fn load_u8_at(offset: i32) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_ABS | BPF_LD | BPF_B) as _,
@@ -343,6 +420,7 @@ pub fn load_u8_at(offset: i32) -> Vec<Instruction> {
     )]
 }
 
+/// Generates a sequence of instructions that loads two octets from a given offset in the packet.
 pub fn load_u16_at(offset: i32) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_ABS | BPF_LD | BPF_H) as _,
@@ -353,6 +431,7 @@ pub fn load_u16_at(offset: i32) -> Vec<Instruction> {
     )]
 }
 
+/// Generates a sequence of instructions that loads four octets from a given offset in the packet.
 pub fn load_u32_at(offset: i32) -> Vec<Instruction> {
     vec![Instruction::new(
         (BPF_ABS | BPF_LD | BPF_W) as _,
