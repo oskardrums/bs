@@ -1,20 +1,22 @@
+#[cfg(feature = "bs-filter")]
+use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
+use bs_system::{cvt, Result, SystemError};
+use cfg_if::cfg_if;
 use libc::c_void;
 use libc::{close, fcntl, socket};
 use libc::{
-    EAGAIN, EINTR, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, MSG_DONTWAIT,
-    O_NONBLOCK,
+    EAGAIN, EINTR, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, O_NONBLOCK,
 };
-
-#[cfg(feature = "bs-filter")]
-use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
-
-#[cfg(target_os = "linux")]
-use libc::{SOCK_CLOEXEC, SOCK_NONBLOCK};
-
 use std::iter::FromIterator;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
-use bs_system::{cvt, Result, SetSocketOption, SystemError};
+cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        pub(crate) use libc::MSG_DONTWAIT;
+        pub(crate) use libc::SOCK_CLOEXEC;
+        pub(crate) use libc::SOCK_NONBLOCK;
+    }
+}
 
 pub(crate) const PROTO_NULL: i32 = 0_i32;
 // TODO - use this pub(crate) const IPPROTO_L2TP: i32 = 115_i32;
@@ -36,48 +38,49 @@ pub struct Socket<S: SocketKind> {
 }
 
 impl<S: SocketKind> Socket<S> {
-    /// Creates a new `Socket` with the `O_CLOEXEC` flag set
-    ///
-    /// this is the recommended way to create blocking `Socket`s
-    #[cfg(target_os = "linux")]
-    pub fn new() -> Result<Self> {
-        Self::with_flags(SOCK_CLOEXEC)
-    }
+    cfg_if! {
+        if #[cfg(target_os = "linux")] {
 
-    #[cfg(not(target_os = "linux"))]
-    pub fn new() -> Result<Self> {
-        Self::with_flags(0)
-    }
+            /// Creates a new `Socket`
+            ///
+            /// sets the O_CLOEXEC creation flag if available for the target
+            pub fn new() -> Result<Self> {
+                Self::with_flags(SOCK_CLOEXEC)
+            }
 
-    /// Creates a new `Socket` without setting any creation flags
-    #[cfg(target_os = "linux")]
-    pub fn plain() -> Result<Self> {
-        Self::with_flags(0)
-    }
+            /// Creates a new `Socket` without setting any creation flags
+            pub fn plain() -> Result<Self> {
+                Self::with_flags(0)
+            }
 
-    #[cfg(not(target_os = "linux"))]
-    pub fn plain() -> Result<Self> {
-        Self::new()
-    }
+            /// Creates a new nonblocking `Socket` with the `O_CLOEXEC` and the `O_NONBLOCK` flags set
+            ///
+            /// this is the recommended way to create nonblocking `Socket`s
+            pub fn nonblocking() -> Result<Self> {
+                Self::with_flags(SOCK_CLOEXEC | SOCK_NONBLOCK)
+            }
 
-    /// Creates a new nonblocking `Socket` with the `O_CLOEXEC` and the `O_NONBLOCK` flags set
-    ///
-    /// this is the recommended way to create nonblocking `Socket`s
-    #[cfg(target_os = "linux")]
-    #[cfg(target_os = "linux")]
-    pub fn nonblocking() -> Result<Self> {
-        Self::with_flags(SOCK_CLOEXEC | SOCK_NONBLOCK)
-    }
+           /// Creates a new nonblocking `Socket` without setting the `O_CLOEXEC` flag
+            pub fn plain_nonblocking() -> Result<Self> {
+                Self::with_flags(SOCK_NONBLOCK)
+            }
+        } else {
 
-    #[cfg(not(target_os = "linux"))]
-    pub fn nonblocking() -> Result<Self> {
-        Self::new().and_then(|s| s.set_nonblocking().map_ok(|| s))
-    }
+            /// Creates a new `Socket`
+            ///
+            /// sets the O_CLOEXEC creation flag if available for the target
+            pub fn new() -> Result<Self> {
+                Self::with_flags(0)
+            }
 
-    /// Creates a new nonblocking `Socket` without setting the `O_CLOEXEC` flag
-    #[cfg(target_os = "linux")]
-    pub fn plain_nonblocking() -> Result<Self> {
-        Self::with_flags(SOCK_NONBLOCK)
+            /// Creates a new nonblocking `Socket` with `O_NONBLOCK` flag set
+            ///
+            /// this is the recommended way to create nonblocking `Socket`s
+            pub fn nonblocking() -> Result<Self> {
+                // TODO - also set the O_CLOEXEC flag
+                Self::new().and_then(|mut s| s.set_nonblocking().map(|_| s))
+            }
+        }
     }
 
     fn with_flags(flags: i32) -> Result<Self> {
@@ -102,6 +105,7 @@ impl<S: SocketKind> Drop for Socket<S> {
 
 mod private {
     use super::*;
+    use bs_system::SetSocketOption;
 
     pub trait PrivateBasicSocket: Sized {
         fn os(&self) -> RawFd;
@@ -111,11 +115,11 @@ mod private {
         }
 
         // TODO - flags to bitflags
-        fn set_flags(&mut self, flags: i32) -> Result<()> {
+        fn set_flags(&mut self, flags: i32) -> Result<&mut Self> {
             unsafe {
                 cvt(fcntl(self.os(), F_SETFL, flags))
                     .map_err(|e| SystemError::from(e))
-                    .and(Ok(()))
+                    .and(Ok(self))
             }
         }
 
@@ -127,7 +131,44 @@ mod private {
                     .and(Ok(()))
             }
         }
+
+        // TODO - make recv more fun and document
+        // TODO - recv_from
+        // TODO - send, send_from
+        fn recv(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
+            unsafe {
+                let n = cvt({
+                    libc::recv(self.os(), buf.as_mut_ptr() as *mut c_void, buf.len(), flags)
+                })?;
+                Ok(n as usize)
+            }
+        }
+
+        fn recv_until_empty(&mut self, flags: i32) -> Result<&mut Self> {
+            let mut buf = [0; DRAIN_BUFFER_SIZE];
+            loop {
+                match self.recv(&mut buf, flags) {
+                    Err(SystemError(EWOULDBLOCK)) => {
+                        return Ok(self);
+                    }
+                    // rustc claims this branch is unreachable
+                    // because it assumes EWOULDBLOCK == EAGAIN == 11
+                    // but that's not always the case
+                    #[allow(unreachable_patterns)]
+                    Err(SystemError(EAGAIN)) => {
+                        return Ok(self);
+                    }
+                    Err(e) => {
+                        return Err(e);
+                    }
+                    Ok(_) => {
+                        continue;
+                    }
+                }
+            }
+        }
     }
+
     pub trait PrivateSetFilter: PrivateBasicSocket {
         fn attach_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
             filter.attach(self.os()).map(|_| self)
@@ -153,85 +194,37 @@ pub trait BasicSocket: private::PrivateBasicSocket {
         unsafe { Ok(cvt(fcntl(self.os(), F_GETFD))?) }
     }
 
-    // TODO - make recv more fun and document
-    // TODO - recv_from
-    // TODO - send, send_from
-    /// recieve a packet on the socket
-    fn recv(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
-        unsafe {
-            let n =
-                cvt({ libc::recv(self.os(), buf.as_mut_ptr() as *mut c_void, buf.len(), flags) })?;
-            Ok(n as usize)
-        }
-    }
-
-    // TODO - set blocking(bool)
+    // TODO - return Result<&mut Self> instead of Result<()> everywhere
     /// set the socket to nonblocking mode
-    fn set_nonblocking(&mut self) -> Result<()> {
+    fn set_nonblocking(&mut self) -> Result<&mut Self> {
         self.set_flags(self.flags()? | O_NONBLOCK)
     }
 
     /// set the socket to blocking mode
-    fn set_blocking(&mut self) -> Result<()> {
+    fn set_blocking(&mut self) -> Result<&mut Self> {
         self.set_flags(self.flags()? & !O_NONBLOCK)
     }
 
-    /// flush the socket's recieve queue
-    #[cfg(target_os = "linux")]
-    fn drain(&mut self) -> Result<&mut Self> {
-        let mut buf = [0; DRAIN_BUFFER_SIZE];
-        loop {
-            match self.recv(&mut buf, MSG_DONTWAIT) {
-                Err(SystemError(EWOULDBLOCK)) => {
-                    return Ok(self);
-                }
-                // rustc claims this branch is unreachable
-                // because it assumes EWOULDBLOCK == EAGAIN == 11
-                // but that's not always the case
-                #[allow(unreachable_patterns)]
-                Err(SystemError(EAGAIN)) => {
-                    return Ok(self);
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-                Ok(_) => {
-                    continue;
-                }
-            }
-        }
+    /// Receives a packet on the socket
+    fn receive(&self, buf: &mut [u8], flags: i32) -> Result<usize> {
+        self.recv(buf, flags)
     }
 
-    #[cfg(not(target_os = "linux"))]
+    /// Flushes the socket's receive queue
     fn drain(&mut self) -> Result<&mut Self> {
-        let mut buf = [0; DRAIN_BUFFER_SIZE];
-        let original_flags = self.flags()?;
-        let revert = false;
-        if !(original_flags & O_NONBLOCK) {
-            let revert = true;
-        }
-        self.set_flags(original_flags | O_NONBLOCK);
-        let res = loop {
-            match self.recv(&mut buf, 0) {
-                Err(SystemError(EWOULDBLOCK)) => {
-                    return Ok(self);
-                }
-                #[allow(unreachable_patterns)]
-                Err(SystemError(EAGAIN)) => {
-                    return Ok(self);
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-                Ok(_) => {
-                    continue;
-                }
+        if cfg!(target_os = "linux") {
+            self.recv_until_empty(MSG_DONTWAIT)
+        } else {
+            let original_flags = self.flags()?;
+            let is_blocking = original_flags & O_NONBLOCK == 0;
+            if is_blocking {
+                self.set_flags(original_flags | O_NONBLOCK)?
+                    .recv_until_empty(0)?
+                    .set_flags(original_flags)
+            } else {
+                Ok(self)
             }
-        };
-        if revert {
-            self.set_flags(original_flags);
         }
-        res
     }
 
     /// set's the socket `FD_CLOEXEC` flag
@@ -270,7 +263,7 @@ pub trait SetFilter: BasicSocket {
     }
 
     /// Flushes the socket's incoming stream and sets a new filter
-    fn set_filter(&mut self, filter: impl SetSocketOption) -> Result<&mut Self> {
+    fn set_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
         let f = Filter::<backend::Classic>::from_iter(backend::Classic::contradiction());
         let drop_filter = f.build()?;
         self.attach_filter(drop_filter)?

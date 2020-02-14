@@ -2,7 +2,6 @@
 //!
 //! Provides a [full sockets API](socket/index.html) with optional support for [flexible kernel packet
 //! filtering](filter/index.html).
-//!
 //! # Examples
 //! ```
 //! # use bs_system::Result;
@@ -42,7 +41,7 @@
 //!             .build()?
 //!     )?;
 //!
-//!     let got_this_many_bytes = s.recv(buffer, 0)?;
+//!     let got_this_many_bytes = s.receive(buffer, 0)?;
 //!
 //!     assert!(got_this_many_bytes > IP_HEADER_LENGTH);
 //!     assert_eq!([1, 1, 1, 1], buffer[IP_SOURCE_START..IP_SOURCE_END]);
@@ -92,6 +91,7 @@ pub mod filter {
 ///
 /// see `bs-socket` for more information
 pub mod socket {
+    #[cfg(target_os = "linux")]
     pub use bs_socket::packet;
     pub use bs_socket::raw;
     pub use bs_socket::socket;
@@ -99,6 +99,8 @@ pub mod socket {
     pub use bs_socket::udp;
 }
 
+// TODO - remove this attribute and add non-linux tests
+#[cfg(target_os = "linux")]
 #[cfg(test)]
 mod tests {
     fn init() {
@@ -106,10 +108,10 @@ mod tests {
     }
 
     use super::filter::*;
-    use super::socket::*;
     use super::socket::socket::*;
+    use super::socket::*;
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(feature = "bs-filter")]
     #[test]
     fn packet_socket_arp_filter() {
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
@@ -118,7 +120,7 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-    #[cfg(all(target_os = "linux", feature = "ebpf"))]
+    #[cfg(feature = "ebpf")]
     #[test]
     fn packet_socket_ebpf_arp_filter() {
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
@@ -127,7 +129,7 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(feature = "bs-filter")]
     #[test]
     fn packet_socket_ether_src() {
         init();
@@ -138,7 +140,7 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(feature = "bs-filter")]
     #[test]
     fn packet_socket_ether_host() {
         init();
@@ -149,7 +151,7 @@ mod tests {
         let _ = s.set_filter(f).unwrap();
     }
 
-    #[cfg(all(target_os = "linux", feature = "bs-filter"))]
+    #[cfg(feature = "bs-filter")]
     #[test]
     fn packet_socket_ip_host() {
         init();
@@ -174,7 +176,7 @@ mod tests {
         //      let _ = s.recv(&mut buf, 0);
     }
 
-    #[cfg(all(target_os = "linux", feature = "ebpf"))]
+    #[cfg(feature = "ebpf")]
     #[test]
     fn packet_socket_ebpf_ip_host() {
         init();

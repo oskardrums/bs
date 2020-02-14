@@ -3,12 +3,11 @@
 //! (Classic / Extended). This module will be replaced
 //! with an enum when const generics land in stable rust.
 
-use bs_system::Result;
-use bs_system::SetSocketOption;
 use crate::filter::AttachFilter;
+use bs_system::Result;
+use cfg_if::cfg_if;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::os::unix::io::RawFd;
 
 #[cfg(feature = "bs-cbpf")]
 mod classic;
@@ -20,11 +19,16 @@ mod extended;
 #[cfg(feature = "bs-ebpf")]
 pub use extended::Extended;
 
+cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        use bs_system::SetSocketOption;
+        use std::os::unix::io::RawFd;
 
-#[cfg(target_os = "linux")]
-impl<T: SetSocketOption> AttachFilter for T {
-    fn attach(&self, socket: RawFd) -> Result<i32> {
-        self.set(socket)
+        impl<T: SetSocketOption> AttachFilter for T {
+            fn attach(&self, socket: RawFd) -> Result<i32> {
+                self.set(socket)
+            }
+        }
     }
 }
 
