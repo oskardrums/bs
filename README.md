@@ -1,7 +1,7 @@
 # bs
-[![Build Status](https://travis-ci.com/oskardrums/bs.svg?token=xiZJWJ821dj7r3DoJgLH&branch=master)](https://travis-ci.com/oskardrums/bs)
+[![Build Status](https://travis-ci.com/oskardrums/bs.svg?branch=master)](https://travis-ci.com/oskardrums/bs)
 
-Safe, sound, and all around *b*etter *s*ockets for Rust
+Safe, sound, and all around **b**etter **s**ockets for Rust
 
 ## Examples
 ```rust
