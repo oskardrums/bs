@@ -3,22 +3,20 @@
 //! Provides a [full sockets API](socket/index.html) with optional support for [flexible kernel packet
 //! filtering](filter/index.html).
 //! # Examples
-//! ```ignore
+//! ```
 //! # use bs_system::Result;
 //! # use bs_system::SystemError as Error;
-//! # use bs_socket::socket::{BasicSocket, SetFilter};
 //! # use std::net::IpAddr;
 //! # use eui48::MacAddress;
+//! # use std::convert::TryInto;
+//!
+//! use bs::filter::classic;
+//! use bs::socket::filter::{AttachFilter, SetFilter};
+//! use bs::socket::packet;
 //! use bs::{
-//!     filter::{
-//!         backend::Classic,
-//!         idiom::{
-//!             ip::ip_src,
-//!             ethernet::ether_src,
-//!         },
-//!     },
+//!     filter::classic::{ip_host, ether_src},
 //!     socket::{
-//!         socket::Socket,
+//!         socket::{Socket, BasicSocket},
 //!         packet::PacketLayer2Socket,
 //!     },
 //! };
@@ -35,10 +33,10 @@
 //!
 //!     let mut s: Socket<PacketLayer2Socket> = Socket::new()?;
 //!
-//!     s.set_filter(
-//!         ( ip_src::<Classic>(vip) & ether_src(my_gateway) )
+//!     s.set_filter::<classic::Attach, classic::Attach>(
+//!         ( ip_host(vip) & ether_src(my_gateway) )
 //!             .compile()?
-//!             .build()?
+//!             .try_into()?
 //!     )?;
 //!
 //!     let got_this_many_bytes = s.receive(buffer, 0)?;
@@ -175,7 +173,6 @@ mod tests {
 
     cfg_if! { if #[cfg(feature = "ebpf")] {
     use crate::filter::extended;
-    use crate::socket::socket::Socket;
 
     #[test]
     fn packet_socket_extended_arp_filter() {
@@ -273,4 +270,40 @@ mod tests {
             let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
         }
         }}
+
+    /*
+    const IP_HEADER_LENGTH: usize = 20;
+    const ETHERNET_HEADER_LENGTH: usize = 14;
+    const IP_SOURCE_START: usize = 12;
+    const IP_SOURCE_END: usize = IP_SOURCE_START + 4;
+
+    use std::convert::TryInto;
+    #[test]
+    fn doc_raw_ethernet_only_loves_one_one_one_one() {
+        let vip = "1.1.1.1".parse().unwrap();
+        let my_gateway = "00:11:22:33:44:55".parse().unwrap();
+
+        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
+
+        let _ = s
+            .set_filter::<classic::Attach, classic::Attach>(
+                (classic::ip_host(vip) & classic::ether_src(my_gateway))
+                    .compile()
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
+            )
+            .unwrap();
+
+        let mut buffer: [u8; 1024] = [0; 1024];
+        let got_this_many_bytes = s.receive(&mut buffer, 0).unwrap();
+
+        assert!(got_this_many_bytes > IP_HEADER_LENGTH);
+        assert_eq!(
+            [1, 1, 1, 1],
+            buffer
+                [ETHERNET_HEADER_LENGTH + IP_SOURCE_START..ETHERNET_HEADER_LENGTH + IP_SOURCE_END]
+        );
+    }
+    */
 }
