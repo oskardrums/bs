@@ -101,17 +101,17 @@ pub mod udp;
 
 #[cfg(test)]
 mod tests {
+    use super::filter::*;
     use super::raw::*;
     use super::socket::*;
-    use super::filter::*;
     use super::tcp::*;
     use super::udp::*;
+    use bs_cbpf::SocketFilterProgram;
     use bs_filter::backend::Classic;
     use bs_filter::idiom::ethernet::ether_type_arp;
-    use bs_cbpf::SocketFilterProgram;
     use cfg_if::cfg_if;
-    use std::os::unix::io::AsRawFd;
     use std::convert::TryFrom;
+    use std::os::unix::io::AsRawFd;
 
     cfg_if! {
         if #[cfg(target_os = "linux")] {

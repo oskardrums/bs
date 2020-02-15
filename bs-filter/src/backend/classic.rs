@@ -28,16 +28,16 @@ impl Backend for Classic {
     }
 
     /*
-use bs_system::{Result, SystemError};
-use libc::EOVERFLOW;
-    fn build_attachable(instructions: Vec<Self::Instruction>) -> Result<Self::Output> {
-        let len = instructions.len();
-        if len > u16::max_value() as usize {
-            return Err(SystemError(EOVERFLOW));
+    use bs_system::{Result, SystemError};
+    use libc::EOVERFLOW;
+        fn build_attachable(instructions: Vec<Self::Instruction>) -> Result<Self::Output> {
+            let len = instructions.len();
+            if len > u16::max_value() as usize {
+                return Err(SystemError(EOVERFLOW));
+            }
+            Ok(Self::Output::from_vector(instructions))
         }
-        Ok(Self::Output::from_vector(instructions))
-    }
-    */
+        */
 
     fn jump(
         comparison: Self::Comparison,

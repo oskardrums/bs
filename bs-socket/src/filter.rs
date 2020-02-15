@@ -25,7 +25,6 @@ pub trait AttachFilter: Sized {
 
 #[cfg(target_os = "linux")]
 impl AttachFilter for SocketFilterProgram {
-
     type Instruction = SocketFilter;
 
     fn attach(&self, socket: RawFd) -> Result<()> {

@@ -81,7 +81,7 @@
 /// Packet filtering related structs and functionality
 ///
 /// see `bs-filter` for more information
-#[cfg(feature = "bs-filter")]
+#[cfg(feature = "filter")]
 pub mod filter {
     // XXX
     #[doc(hidden)]
@@ -170,23 +170,15 @@ mod tests {
     use crate::filter::classic;
     use crate::socket::filter::{AttachFilter, SetFilter};
     use crate::socket::packet;
-    use crate::socket::socket::{Socket, BasicSocket};
+    use crate::socket::socket::Socket;
+    use cfg_if::cfg_if;
 
-    #[cfg(feature = "ebpf")]
+    cfg_if! { if #[cfg(feature = "ebpf")] {
     use crate::filter::extended;
+    use crate::socket::socket::Socket;
 
-    #[cfg(feature = "bs-filter")]
     #[test]
-    fn packet_socket_arp_filter() {
-        init();
-        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let f = classic::Attach::from_instructions(classic::arp().compile().unwrap()).unwrap();
-        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
-    }
-
-    #[cfg(feature = "ebpf")]
-    #[test]
-    fn packet_socket_ebpf_arp_filter() {
+    fn packet_socket_extended_arp_filter() {
         init();
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
         let f = extended::Attach::from_instructions(extended::arp().compile().unwrap()).unwrap();
@@ -195,61 +187,6 @@ mod tests {
             .unwrap();
     }
 
-    #[cfg(feature = "bs-filter")]
-    #[test]
-    fn packet_socket_ether_src() {
-        init();
-        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let f = classic::Attach::from_instructions(
-            classic::ether_src("00:11:22:33:44:55".parse().unwrap())
-                .compile()
-                .unwrap(),
-        )
-        .unwrap();
-        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
-    }
-
-    #[cfg(feature = "bs-filter")]
-    #[test]
-    fn packet_socket_ether_host() {
-        init();
-        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let f = classic::Attach::from_instructions(
-            classic::ether_host("00:11:22:33:44:55".parse().unwrap())
-                .compile()
-                .unwrap(),
-        )
-        .unwrap();
-        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
-    }
-
-    #[cfg(feature = "bs-filter")]
-    #[test]
-    fn packet_socket_ip_host() {
-        init();
-        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let f = classic::Attach::from_instructions(
-            classic::ip_host("1.1.1.1".parse().unwrap())
-                .compile()
-                .unwrap(),
-        )
-        .unwrap();
-        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
-
-
-//        let mut buf: [u8;1024] = [0;1024];
-//        let _ = s.receive(&mut buf, 0);
-
-        init();
-        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let f = classic::Attach::from_instructions(
-            classic::ip_host("::1".parse().unwrap()).compile().unwrap(),
-        )
-        .unwrap();
-        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
-    }
-
-    #[cfg(feature = "ebpf")]
     #[test]
     fn packet_socket_extended_ip_host() {
         init();
@@ -274,4 +211,66 @@ mod tests {
             .set_filter::<classic::Attach, extended::Attach>(f)
             .unwrap();
     }
+    }}
+
+    cfg_if! { if #[cfg(feature = "filter")] {
+        #[test]
+        fn packet_socket_arp_filter() {
+            init();
+            let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
+            let f = classic::Attach::from_instructions(classic::arp().compile().unwrap()).unwrap();
+            let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
+        }
+
+        #[test]
+        fn packet_socket_ether_src() {
+            init();
+            let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
+            let f = classic::Attach::from_instructions(
+                classic::ether_src("00:11:22:33:44:55".parse().unwrap())
+                    .compile()
+                    .unwrap(),
+            )
+            .unwrap();
+            let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
+        }
+
+        #[test]
+        fn packet_socket_ether_host() {
+            init();
+            let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
+            let f = classic::Attach::from_instructions(
+                classic::ether_host("00:11:22:33:44:55".parse().unwrap())
+                    .compile()
+                    .unwrap(),
+            )
+            .unwrap();
+            let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
+        }
+
+        #[test]
+        fn packet_socket_ip_host() {
+            init();
+            let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
+            let f = classic::Attach::from_instructions(
+                classic::ip_host("1.1.1.1".parse().unwrap())
+                    .compile()
+                    .unwrap(),
+            )
+            .unwrap();
+            let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
+
+
+    //        let mut buf: [u8;1024] = [0;1024];
+    //        let _ = s.receive(&mut buf, 0);
+
+            init();
+            let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
+            let f = classic::Attach::from_instructions(
+                classic::ip_host("::1".parse().unwrap()).compile().unwrap(),
+            )
+            .unwrap();
+            let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
+        }
+        }}
 }

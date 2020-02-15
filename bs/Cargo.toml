@@ -20,3 +20,4 @@ eui48 = "0.4"
 log = "0.4"
 env_logger = "0.7"
 bs-system = { path = "../bs-system", version = "0.1" }
+cfg-if = "0.1"

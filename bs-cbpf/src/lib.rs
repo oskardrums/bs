@@ -33,8 +33,8 @@
     missing_copy_implementations
 )]
 
-use bs_system::{SystemError, Result};
 use bs_system::{consts::*, Level, Name, SetSocketOption, SocketOption};
+use bs_system::{Result, SystemError};
 use cfg_if::cfg_if;
 use libc::socklen_t;
 use libc::EOVERFLOW;
