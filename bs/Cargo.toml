@@ -5,15 +5,18 @@ authors = ["Oskar Matzerath <moskar.drummer@gmail.com>"]
 edition = "2018"
 
 [features]
-default = ["bs-filter"]
-ebpf    = ["bs-filter/bs-ebpf"]
+default = ["filter"]
+filter  = ["bs-filter", "bs-cbpf", "bs-socket/filter"]
+ebpf    = ["bs-filter/bs-ebpf", "bs-ebpf"]
 
 [dependencies]
-bs-filter = { path = "../bs-filter", version = "0.1", optional = true }
 bs-socket = { path = "../bs-socket", version = "0.1" }
+bs-cbpf = { path = "../bs-cbpf", version = "0.1" , optional = true }
+bs-ebpf = { path = "../bs-ebpf", version = "0.1" , optional = true }
+bs-filter = { path = "../bs-filter", version = "0.1", optional = true }
+eui48 = "0.4"
 
 [dev-dependencies]
 log = "0.4"
 env_logger = "0.7"
-eui48 = "0.4"
 bs-system = { path = "../bs-system", version = "0.1" }

@@ -5,7 +5,6 @@ use libc::{close, fcntl, socket};
 use libc::{
     EAGAIN, EINTR, EWOULDBLOCK, FD_CLOEXEC, F_GETFD, F_GETFL, F_SETFD, F_SETFL, O_NONBLOCK,
 };
-use std::iter::FromIterator;
 use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
 cfg_if! {
@@ -241,32 +240,5 @@ impl<S: SocketKind> IntoRawFd for Socket<S> {
 impl<S: SocketKind> FromRawFd for Socket<S> {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         Self { inner: S::new(fd) }
-    }
-}
-
-cfg_if! {
-    if #[cfg(feature = "bs-filter")] {
-        use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
-        use std::convert::TryFrom;
-        /// Extends [`BasicSocket`](trait.BasicSocket.html) with a method to set a packet filter on the
-        /// socket
-        pub trait SetFilter<K: Backend, A: AttachFilter + TryFrom<Vec<K::Instruction>, Error=SystemError>>: BasicSocket {
-            /// Sets a new socket filter in the socket, or replaces the existing filter if already set
-            // TODO - should this method really be public?
-            fn attach_filter(&mut self, filter: A) -> Result<&mut Self> {
-                filter.attach(self.os()).map(|_| self)
-            }
-
-            /// Flushes the socket's incoming stream and sets a new filter
-            fn set_filter(&mut self, filter: A) -> std::result::Result<&mut Self, A::Error> {
-                let f = Filter::<backend::Classic>::from_iter(backend::Classic::contradiction());
-                let drop_filter = f.build().unwrap();
-                self.attach_filter(drop_filter)?
-                    .drain()?
-                    .attach_filter(filter)
-            }
-        }
-
-        impl<K: Backend, A: AttachFilter + TryFrom<Vec<K::Instruction>, Error=SystemError>, S: SocketKind> SetFilter<K, A> for Socket<S> {}
     }
 }

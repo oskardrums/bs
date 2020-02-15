@@ -1,26 +1,4 @@
-//! Used by `bs-socket` to set `SocketOption`s for `Socket`s
-//! including BPF filters created with `bs-filter`
-//!
-//! # Example
-//! ```ignore
-//! use bs::socket::{Socket, UdpSocket};
-//! use bs::filter::{Filter, backend::Classic};
-//!
-//! fn attach_classic_filter(sock: Socket<UdpSocket>, filter: Filter<Classic>) -> Result<()> {
-//!    let prog: Program<Classic> = filter.into();
-//!    let mut opt = prog.build()?;
-//!    opt.set(self.os())
-//! }
-//! ```
-//!
-//! # More information
-//! For more infromation about socket options, see
-//! * `getsockopt(2)`/`setsockopt(2)`
-//! * `socket(7)`
-//! * `ip(7)`
-//! * `tcp(7)`
-//! * `udp(7)`
-//! * ...
+//! XXX
 
 #![deny(
     bad_style,

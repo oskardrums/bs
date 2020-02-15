@@ -86,6 +86,10 @@ cfg_if! {
     }
 }
 
+#[cfg(feature = "filter")]
+/// XXX
+pub mod filter;
+
 /// `SocketKind` for `raw(7)` sockets
 pub mod raw;
 
@@ -99,12 +103,15 @@ pub mod udp;
 mod tests {
     use super::raw::*;
     use super::socket::*;
+    use super::filter::*;
     use super::tcp::*;
     use super::udp::*;
     use bs_filter::backend::Classic;
     use bs_filter::idiom::ethernet::ether_type_arp;
+    use bs_cbpf::SocketFilterProgram;
     use cfg_if::cfg_if;
     use std::os::unix::io::AsRawFd;
+    use std::convert::TryFrom;
 
     cfg_if! {
         if #[cfg(target_os = "linux")] {
@@ -117,8 +124,8 @@ mod tests {
                 // UDP is arbitrary here
                 let mut s: Socket<UdpSocket> = Socket::new().unwrap();
                 let p = ether_type_arp::<Classic>();
-                let f = p.compile().unwrap().build().unwrap();
-                s.set_filter(f).unwrap();
+                let f = SocketFilterProgram::try_from(p.compile().unwrap()).unwrap();
+                s.set_filter::<SocketFilterProgram, SocketFilterProgram>(f).unwrap();
             }
 
             /*

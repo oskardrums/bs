@@ -3,7 +3,7 @@
 //! Provides a [full sockets API](socket/index.html) with optional support for [flexible kernel packet
 //! filtering](filter/index.html).
 //! # Examples
-//! ```
+//! ```ignore
 //! # use bs_system::Result;
 //! # use bs_system::SystemError as Error;
 //! # use bs_socket::socket::{BasicSocket, SetFilter};
@@ -83,14 +83,74 @@
 /// see `bs-filter` for more information
 #[cfg(feature = "bs-filter")]
 pub mod filter {
-    pub use bs_filter::backend;
-    pub use bs_filter::idiom;
+    // XXX
+    #[doc(hidden)]
+    pub mod classic {
+        use bs_cbpf::SocketFilterProgram;
+        use bs_filter::backend::Classic as Backend;
+        use bs_filter::idiom;
+        use bs_filter::Predicate;
+        use eui48::MacAddress;
+        use std::net::IpAddr;
+
+        pub type Filter = Predicate<Backend>;
+        pub type Attach = SocketFilterProgram;
+
+        pub fn arp() -> Filter {
+            idiom::ethernet::ether_type_arp::<Backend>()
+        }
+
+        pub fn ether_src(mac: MacAddress) -> Filter {
+            idiom::ethernet::ether_src::<Backend>(mac)
+        }
+
+        pub fn ether_host(mac: MacAddress) -> Filter {
+            idiom::ethernet::ether_host::<Backend>(mac)
+        }
+
+        pub fn ip_host(ip: IpAddr) -> Filter {
+            idiom::ip::ip_host::<Backend>(ip)
+        }
+    }
+
+    // XXX
+    #[doc(hidden)]
+    #[cfg(feature = "ebpf")]
+    pub mod extended {
+        use bs_ebpf::SocketFilterFd;
+        use bs_filter::backend::Extended;
+        use bs_filter::idiom;
+        use bs_filter::Predicate;
+        use eui48::MacAddress;
+        use std::net::IpAddr;
+
+        pub type Filter = Predicate<Extended>;
+        pub type Attach = SocketFilterFd;
+
+        pub fn arp() -> Filter {
+            idiom::ethernet::ether_type_arp::<Extended>()
+        }
+
+        pub fn ether_src(mac: MacAddress) -> Filter {
+            idiom::ethernet::ether_src::<Extended>(mac)
+        }
+
+        pub fn ether_host(mac: MacAddress) -> Filter {
+            idiom::ethernet::ether_host::<Extended>(mac)
+        }
+
+        pub fn ip_host(ip: IpAddr) -> Filter {
+            idiom::ip::ip_host::<Extended>(ip)
+        }
+    }
 }
 
 /// Main sockets API
 ///
 /// see `bs-socket` for more information
 pub mod socket {
+    #[cfg(feature = "filter")]
+    pub use bs_socket::filter;
     #[cfg(target_os = "linux")]
     pub use bs_socket::packet;
     pub use bs_socket::raw;
@@ -107,26 +167,32 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
     }
 
-    use super::filter::*;
-    use super::socket::socket::*;
-    use super::socket::*;
+    use crate::filter::classic;
+    use crate::socket::filter::{AttachFilter, SetFilter};
+    use crate::socket::packet;
+    use crate::socket::socket::{Socket, BasicSocket};
+
+    #[cfg(feature = "ebpf")]
+    use crate::filter::extended;
 
     #[cfg(feature = "bs-filter")]
     #[test]
     fn packet_socket_arp_filter() {
+        init();
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let p = idiom::ethernet::ether_type_arp::<backend::Classic>();
-        let f = p.compile().unwrap().build().unwrap();
-        let _ = s.set_filter(f).unwrap();
+        let f = classic::Attach::from_instructions(classic::arp().compile().unwrap()).unwrap();
+        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
     }
 
     #[cfg(feature = "ebpf")]
     #[test]
     fn packet_socket_ebpf_arp_filter() {
+        init();
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let p = idiom::ethernet::ether_type_arp::<backend::Extended>();
-        let f = p.compile().unwrap().build().unwrap();
-        let _ = s.set_filter(f).unwrap();
+        let f = extended::Attach::from_instructions(extended::arp().compile().unwrap()).unwrap();
+        let _ = s
+            .set_filter::<classic::Attach, extended::Attach>(f)
+            .unwrap();
     }
 
     #[cfg(feature = "bs-filter")]
@@ -134,10 +200,13 @@ mod tests {
     fn packet_socket_ether_src() {
         init();
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let p =
-            idiom::ethernet::ether_src::<backend::Classic>("00:11:22:33:44:55".parse().unwrap());
-        let f = p.compile().unwrap().build().unwrap();
-        let _ = s.set_filter(f).unwrap();
+        let f = classic::Attach::from_instructions(
+            classic::ether_src("00:11:22:33:44:55".parse().unwrap())
+                .compile()
+                .unwrap(),
+        )
+        .unwrap();
+        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
     }
 
     #[cfg(feature = "bs-filter")]
@@ -145,10 +214,13 @@ mod tests {
     fn packet_socket_ether_host() {
         init();
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let p =
-            idiom::ethernet::ether_host::<backend::Classic>("00:11:22:33:44:55".parse().unwrap());
-        let f = p.compile().unwrap().build().unwrap();
-        let _ = s.set_filter(f).unwrap();
+        let f = classic::Attach::from_instructions(
+            classic::ether_host("00:11:22:33:44:55".parse().unwrap())
+                .compile()
+                .unwrap(),
+        )
+        .unwrap();
+        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
     }
 
     #[cfg(feature = "bs-filter")]
@@ -156,37 +228,50 @@ mod tests {
     fn packet_socket_ip_host() {
         init();
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let _ = s.set_filter(
-            idiom::ip::ip_host::<backend::Classic>("1.1.1.1".parse().unwrap())
+        let f = classic::Attach::from_instructions(
+            classic::ip_host("1.1.1.1".parse().unwrap())
                 .compile()
-                .unwrap()
-                .build()
                 .unwrap(),
-        );
+        )
+        .unwrap();
+        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
 
-        let _ = s.set_filter(
-            idiom::ip::ip_host::<backend::Classic>("::1".parse().unwrap())
-                .compile()
-                .unwrap()
-                .build()
-                .unwrap(),
-        );
 
-        //      let mut buf: [u8;1024] = [0;1024];
-        //      let _ = s.recv(&mut buf, 0);
+//        let mut buf: [u8;1024] = [0;1024];
+//        let _ = s.receive(&mut buf, 0);
+
+        init();
+        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
+        let f = classic::Attach::from_instructions(
+            classic::ip_host("::1".parse().unwrap()).compile().unwrap(),
+        )
+        .unwrap();
+        let _ = s.set_filter::<classic::Attach, classic::Attach>(f).unwrap();
     }
 
     #[cfg(feature = "ebpf")]
     #[test]
-    fn packet_socket_ebpf_ip_host() {
+    fn packet_socket_extended_ip_host() {
         init();
         let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
-        let _ = s.set_filter(
-            idiom::ip::ip_host::<backend::Extended>("1.1.1.1".parse().unwrap())
+        let f = extended::Attach::from_instructions(
+            extended::ip_host("1.1.1.1".parse().unwrap())
                 .compile()
-                .unwrap()
-                .build()
                 .unwrap(),
-        );
+        )
+        .unwrap();
+        let _ = s
+            .set_filter::<classic::Attach, extended::Attach>(f)
+            .unwrap();
+
+        init();
+        let mut s: Socket<packet::PacketLayer2Socket> = Socket::new().unwrap();
+        let f = extended::Attach::from_instructions(
+            extended::ip_host("::1".parse().unwrap()).compile().unwrap(),
+        )
+        .unwrap();
+        let _ = s
+            .set_filter::<classic::Attach, extended::Attach>(f)
+            .unwrap();
     }
 }
