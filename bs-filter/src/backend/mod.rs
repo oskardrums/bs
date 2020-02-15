@@ -1,39 +1,25 @@
 //! This module contains phantom structs that represent different implementations of BPF operations
 
-use bs_system::Result;
+use cfg_if::cfg_if;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-#[cfg(feature = "bs-cbpf")]
-mod classic;
-#[cfg(feature = "bs-cbpf")]
-pub use classic::Classic;
+cfg_if! { if #[cfg(feature = "bs-cbpf")] {
+    mod classic;
+    pub use classic::Classic;
+}}
 
-#[cfg(feature = "bs-ebpf")]
-mod extended;
-#[cfg(feature = "bs-ebpf")]
-pub use extended::Extended;
-
-mod private {
-    use crate::AttachFilter;
-
-    pub trait FilterBackend {
-        // TODO:
-        // only linux uses setsockopt to attach filters, macOS for instance uses ioctl
-        // instead. So SocketOption is not a very appropriate.
-        // change SocketOption to something more cross-compatible, e.g. Attachable.
-        // Also, make the into_socket_option a generic `Filter` method (with a more suitable name)
-        // and get rid of `Program` entirely.
-        type Output: AttachFilter;
-    }
-}
+cfg_if! { if #[cfg(feature = "bs-ebpf")] {
+    mod extended;
+    pub use extended::Extended;
+}}
 
 /// The main interface implemented BPF implementations.
 /// Defines the minimal basic building blocks needed by the [`idiom`] module to create basic
 /// filtering predicates that can then be composed into arbitrarily complex filter programs.
 ///
 /// [`idiom`]: ../idiom/index.html
-pub trait Backend: Sized + Clone + Ord + Debug + Hash + private::FilterBackend {
+pub trait Backend: Sized + Clone + Ord + Debug + Hash {
     /// Determines the kind of relation to be checked between a couple of operands on a particular
     /// jump instruction.
     type Comparison: Clone + Ord + Debug + Hash + From<u8>;
@@ -84,7 +70,4 @@ pub trait Backend: Sized + Clone + Ord + Debug + Hash + private::FilterBackend {
 
     /// Generates a sequence of instructions that loads four octets from a given offset in the packet.
     fn load_u32_at(offset: u32) -> Vec<Self::Instruction>;
-
-    /// XXX
-    fn build_attachable(instructions: Vec<Self::Instruction>) -> Result<Self::Output>;
 }

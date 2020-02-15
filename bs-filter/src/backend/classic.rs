@@ -1,17 +1,10 @@
-use crate::backend::{private::FilterBackend, Backend};
+use crate::backend::Backend;
 use bs_cbpf as cbpf;
-use bs_system::{Result, SystemError};
-use libc::EOVERFLOW;
 
 /// Phantom struct to represent Classic BPF related
 /// functionalities.
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Classic {}
-
-impl FilterBackend for Classic {
-    #[cfg(target_os = "linux")]
-    type Output = cbpf::SocketFilterProgram;
-}
 
 impl Backend for Classic {
     type Comparison = cbpf::Comparison;
@@ -34,6 +27,9 @@ impl Backend for Classic {
         cbpf::contradiction()
     }
 
+    /*
+use bs_system::{Result, SystemError};
+use libc::EOVERFLOW;
     fn build_attachable(instructions: Vec<Self::Instruction>) -> Result<Self::Output> {
         let len = instructions.len();
         if len > u16::max_value() as usize {
@@ -41,6 +37,7 @@ impl Backend for Classic {
         }
         Ok(Self::Output::from_vector(instructions))
     }
+    */
 
     fn jump(
         comparison: Self::Comparison,

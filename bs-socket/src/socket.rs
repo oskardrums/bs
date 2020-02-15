@@ -1,5 +1,3 @@
-#[cfg(feature = "bs-filter")]
-use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
 use bs_system::{cvt, Result, SystemError};
 use cfg_if::cfg_if;
 use libc::c_void;
@@ -168,12 +166,6 @@ mod private {
             }
         }
     }
-
-    pub trait PrivateSetFilter: PrivateBasicSocket {
-        fn attach_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
-            filter.attach(self.os()).map(|_| self)
-        }
-    }
 }
 
 impl<S: SocketKind> private::PrivateBasicSocket for Socket<S> {
@@ -252,24 +244,29 @@ impl<S: SocketKind> FromRawFd for Socket<S> {
     }
 }
 
-/// Extends [`BasicSocket`](trait.BasicSocket.html) with a method to set a packet filter on the
-/// socket
-#[cfg(feature = "bs-filter")]
-pub trait SetFilter: BasicSocket {
-    /// Sets a new socket filter in the socket, or replaces the existing filter if already set
-    fn attach_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
-        filter.attach(self.os()).map(|_| self)
-    }
+cfg_if! {
+    if #[cfg(feature = "bs-filter")] {
+        use bs_filter::{backend, backend::Backend, AttachFilter, Filter};
+        use std::convert::TryFrom;
+        /// Extends [`BasicSocket`](trait.BasicSocket.html) with a method to set a packet filter on the
+        /// socket
+        pub trait SetFilter<K: Backend, A: AttachFilter + TryFrom<Vec<K::Instruction>, Error=SystemError>>: BasicSocket {
+            /// Sets a new socket filter in the socket, or replaces the existing filter if already set
+            // TODO - should this method really be public?
+            fn attach_filter(&mut self, filter: A) -> Result<&mut Self> {
+                filter.attach(self.os()).map(|_| self)
+            }
 
-    /// Flushes the socket's incoming stream and sets a new filter
-    fn set_filter(&mut self, filter: impl AttachFilter) -> Result<&mut Self> {
-        let f = Filter::<backend::Classic>::from_iter(backend::Classic::contradiction());
-        let drop_filter = f.build()?;
-        self.attach_filter(drop_filter)?
-            .drain()?
-            .attach_filter(filter)
+            /// Flushes the socket's incoming stream and sets a new filter
+            fn set_filter(&mut self, filter: A) -> std::result::Result<&mut Self, A::Error> {
+                let f = Filter::<backend::Classic>::from_iter(backend::Classic::contradiction());
+                let drop_filter = f.build().unwrap();
+                self.attach_filter(drop_filter)?
+                    .drain()?
+                    .attach_filter(filter)
+            }
+        }
+
+        impl<K: Backend, A: AttachFilter + TryFrom<Vec<K::Instruction>, Error=SystemError>, S: SocketKind> SetFilter<K, A> for Socket<S> {}
     }
 }
-
-#[cfg(target_os = "linux")]
-impl<S: SocketKind> SetFilter for Socket<S> {}

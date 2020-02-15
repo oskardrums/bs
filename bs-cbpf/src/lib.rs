@@ -33,8 +33,12 @@
     missing_copy_implementations
 )]
 
+use bs_system::{SystemError, Result};
 use bs_system::{consts::*, Level, Name, SetSocketOption, SocketOption};
+use cfg_if::cfg_if;
 use libc::socklen_t;
+use libc::EOVERFLOW;
+use std::convert::TryFrom;
 use std::hash::Hash;
 use std::mem::size_of;
 
@@ -77,34 +81,30 @@ pub struct SocketFilterProgram {
     filter: Box<[SocketFilter]>,
 }
 
-impl SocketFilterProgram {
-    /// Creates a new `SocketFilterProgram` from the given `SocketFilter` vector
-    pub fn from_vector(v: Vec<SocketFilter>) -> Self {
-        let len = v.len() as u16;
-        let filter = v.into_boxed_slice();
-        Self { len, filter }
-    }
-}
+cfg_if! {
+    if #[cfg(target_os = "linux")] {
 
-impl SocketOption for SocketFilterProgram {
-    fn level() -> Level {
-        Level::Socket
-    }
-    fn name() -> Name {
-        Name::AttachFilter
-    }
-    fn optlen(&self) -> socklen_t {
-        // here be lions
-        #[repr(C)]
-        struct S {
-            len: u16,
-            filter: *mut SocketFilter,
+        impl SocketOption for SocketFilterProgram {
+            fn level() -> Level {
+                Level::Socket
+            }
+            fn name() -> Name {
+                Name::AttachFilter
+            }
+            fn optlen(&self) -> socklen_t {
+                // here be lions
+                #[repr(C)]
+                struct S {
+                    len: u16,
+                    filter: *mut SocketFilter,
+                }
+                size_of::<S>() as socklen_t
+            }
         }
-        size_of::<S>() as socklen_t
+
+        impl SetSocketOption for SocketFilterProgram {}
     }
 }
-
-impl SetSocketOption for SocketFilterProgram {}
 
 /// Different kinds of comparisons to perform upon `BPF_JMP` instructions
 #[repr(u8)]
@@ -211,4 +211,19 @@ pub fn load_u32_at(offset: u32) -> Vec<Instruction> {
         0,
         offset,
     )]
+}
+
+impl TryFrom<Vec<SocketFilter>> for SocketFilterProgram {
+    type Error = SystemError;
+    fn try_from(instructions: Vec<SocketFilter>) -> Result<Self> {
+        let len = instructions.len();
+        if len > u16::max_value() as usize {
+            return Err(SystemError(EOVERFLOW));
+        }
+        let filter = instructions.into_boxed_slice();
+        Ok(Self {
+            len: len as u16,
+            filter,
+        })
+    }
 }
