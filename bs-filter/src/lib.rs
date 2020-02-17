@@ -28,12 +28,8 @@
     missing_copy_implementations
 )]
 
-pub(crate) mod filter;
 pub(crate) mod predicate;
-pub(crate) mod program;
 
-pub use filter::AttachFilter;
-pub use filter::Filter;
 pub use predicate::Predicate;
 
 /// Provides various filtering backends, namely cBPF [`Classic`](backend/struct.Classic.html)

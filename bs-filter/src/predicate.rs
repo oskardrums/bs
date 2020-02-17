@@ -1,5 +1,4 @@
 use crate::backend::Backend;
-use crate::filter::Filter;
 use crate::Condition;
 pub use boolean_expression::Expr;
 pub use boolean_expression::Expr::*;
@@ -8,7 +7,6 @@ use bs_system::Result;
 use std::cmp::Ord;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::iter::FromIterator;
 use std::ops::{BitAnd, BitOr, Not};
 
 /// A boolian logic construction of `Condition`s
@@ -46,7 +44,7 @@ pub struct Predicate<K: Backend> {
 
 impl<K: Backend> Predicate<K> {
     /// Generate a `Socket`-appropriate `Filter` implementing `self`'s logic
-    pub fn compile(mut self) -> Result<Filter<K>> {
+    pub fn compile(mut self) -> Result<Vec<K::Instruction>> {
         self = Predicate::from_inner(self.into_inner().simplify_via_laws());
         let (mut instructions, jt, jf) = K::return_sequence();
 
@@ -57,7 +55,7 @@ impl<K: Backend> Predicate<K> {
         instructions.reverse();
         // TODO - optimizations
 
-        Ok(Filter::from_iter(instructions))
+        Ok(instructions)
     }
 
     /// always false

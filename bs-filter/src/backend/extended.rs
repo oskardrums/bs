@@ -1,16 +1,10 @@
-use crate::backend::{private::FilterBackend, Backend};
+use crate::backend::Backend;
 use bs_ebpf as ebpf;
-use bs_system::{Result, SystemError};
-use libc::EOVERFLOW;
 
 /// Phantom struct to represent Extended BPF related
 /// functionalities.
 #[derive(Copy, Clone, Debug, Ord, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Extended {}
-
-impl FilterBackend for Extended {
-    type SocketOption = ebpf::SocketFilterFd;
-}
 
 impl Backend for Extended {
     type Comparison = ebpf::Comparison;
@@ -30,14 +24,15 @@ impl Backend for Extended {
         ebpf::contradiction()
     }
 
-    // TODO - to provided method
-    fn into_socket_option(instructions: Vec<Self::Instruction>) -> Result<Self::SocketOption> {
+    /*
+    fn build_attachable(instructions: Vec<Self::Instruction>) -> Result<Self::Output> {
         let len = instructions.len();
         if len > u16::max_value() as usize {
             return Err(SystemError(EOVERFLOW));
         }
         Ok(ebpf::SocketFilterBpfAttribute::new(instructions).load()?)
     }
+    */
 
     fn jump(
         comparison: Self::Comparison,

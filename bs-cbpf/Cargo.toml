@@ -8,3 +8,4 @@ edition = "2018"
 libc                = "0.2"
 bs-system          = { version = "0.1", path = "../bs-system" }
 log = "0.4"
+cfg-if = "0.1"

@@ -5,10 +5,13 @@ authors = ["Oskar Matzerath <moskar.drummer@gmail.com>"]
 edition = "2018"
 
 [features]
-default = ["bs-filter"]
+filter  = ["bs-filter", "bs-cbpf"]
+ebpf    = ["bs-filter/bs-ebpf", "bs-ebpf"]
 
 [dependencies]
 libc = "0.2"
 bs-filter = { path = "../bs-filter", version = "0.1" , optional = true }
+bs-ebpf = { path = "../bs-ebpf", version = "0.1" , optional = true }
+bs-cbpf = { path = "../bs-cbpf", version = "0.1", optional = true }
 bs-system = { path = "../bs-system", version = "0.1" }
 cfg-if = "0.1"
